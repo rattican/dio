@@ -1,4 +1,4 @@
-package a2;
+package a3;
 
 import tage.*;
 import tage.shapes.*;
@@ -17,12 +17,24 @@ import net.java.games.input.Component.Identifier.*;
 import tage.nodeControllers.*;
 import org.joml.Vector3f;
 
+import tage.networking.IGameConnection.ProtocolType;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import a3.MyGame;
 
 import org.joml.Matrix4f;
 
 public class MyGame extends VariableFrameRateGame
 {
+	//networking
+	private GhostManager gm;
+	private String serverAddress;
+	private int serverPort;
+	private ProtocolType serverProtocol;
+	private ProtocolClient protClient;
+	private boolean isClientConnected = false;
+	private boolean isConnected = false;
 	private static Engine engine;
 
 	// game state stuff
@@ -62,19 +74,63 @@ public class MyGame extends VariableFrameRateGame
 
 	private CameraOrbit3D orbit;
 
-	public MyGame() { super(); }
+	public MyGame(String serverAddress, int serverPort, String protocol) { 
+		super(); 
+		gm = new GhostManager(this);
+		this.serverAddress = serverAddress;
+		this.serverPort = serverPort;
+		if (protocol.toUpperCase().compareTo("TCP") == 0)
+			this.serverProtocol = ProtocolType.TCP;
+		else
+			this.serverProtocol = ProtocolType.UDP;
+		}
 
 	public static void main(String[] args)
-	{	MyGame game = new MyGame();
-		engine = new Engine(game);
-		engine.initializeSystem();
-		game.buildGame();
-		game.startGame();
+	{	
+		System.setProperty("jogl.disable.opengl.core", "true");
+		if (args.length < 3) {
+        	System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol>");
+    	} else {
+        	MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2]);
+        	engine = new Engine(game);
+       		engine.initializeSystem();
+        	game.buildGame();
+        	game.startGame();
+    }
+
 	}
 
 	// getters
 	public GameObject getAvatar() { return dol; }
+	public Vector3f getPlayerPosition() { return dol.getWorldLocation(); }
+
+	//from code07a2
+	//public GameObject getAvatar() { return avatar; }
+	//public ObjShape getGhostShape() { return ghostS; }
+	public ObjShape getGhostShape() { return dolS; }
+	public TextureImage getGhostTexture() { return doltx; }
+	public GhostManager getGhostManager() { return gm; }
+
 	public Engine getEngine() {return engine;}
+	public void setIsConnected(boolean v) { isConnected = v; }
+
+	//set up networking
+	private void setupNetworking() {
+    	isClientConnected = false;
+    	gm = new GhostManager(this); // Initialize manager for other players 
+    	try {
+        	protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
+    		} catch (UnknownHostException e) { e.printStackTrace();
+    	} catch (IOException e) { 
+			e.printStackTrace(); 
+			}
+    	if (protClient == null) {
+        	System.out.println("missing protocol host");
+    	} else {
+        	protClient.sendJoinMessage(); // Start  handshake 
+    	}
+	}
+
 
 	// check collisions; call in update()
 	private void checkCollisions() {
@@ -315,7 +371,7 @@ public class MyGame extends VariableFrameRateGame
 		im = engine.getInputManager();
 
 		// movement actions
-		FwdAction fwdAction = new FwdAction(this);
+		FwdAction fwdAction = new FwdAction(this, protClient); // 		
 		BackAction backAction = new BackAction(this);
 		TurnAction turnAction = new TurnAction(this);
 		KeyboardTurnLeftAction kbLeft = new KeyboardTurnLeftAction(this);
@@ -384,6 +440,8 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		setupNetworking();
+
 	}
 
 	@Override
@@ -395,7 +453,10 @@ public class MyGame extends VariableFrameRateGame
 
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
-
+		//checking if packets received by the client from the server
+		if (protClient != null) {
+        protClient.processPackets();
+    }
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -487,5 +548,13 @@ public class MyGame extends VariableFrameRateGame
 				break;
 		}
 		super.keyPressed(e);
+	}
+	private class SendCloseConnectionPacketAction extends AbstractInputAction
+	{	@Override
+		public void performAction(float time, net.java.games.input.Event evt) 
+		{	if(protClient != null && isClientConnected == true)
+			{	protClient.sendByeMessage();
+			}
+		}
 	}
 }

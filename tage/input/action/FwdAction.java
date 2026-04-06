@@ -1,5 +1,8 @@
 package tage.input.action;
 
+import a3.MyGame;
+import a3.ProtocolClient;
+
 import tage.*;
 import tage.input.action.AbstractInputAction; 
 import net.java.games.input.Event; 
@@ -18,36 +21,36 @@ import a3.MyGame;
  */
 
 public class FwdAction extends AbstractInputAction
-{   private MyGame game; 
-    private GameObject av;
-    private Vector3f oldPos, newPos;
-    private Vector4f fwd;
+{   	
+    private MyGame game;
+	private GameObject av;
+	private Vector3f oldPosition, newPosition;
+	private Vector4f fwdDirection;
+	private ProtocolClient protClient;
 
-    public FwdAction(MyGame g) { game = g;}
 
+    public FwdAction(MyGame g, ProtocolClient p) { 
+        game = g;
+        protClient = p;
+    }
     /**
      * Moves avatar forward based on value from Event e. Values near zero are ignored to prevent collision to ground.
      * 
      * @param time  elapsed time since last frame used for time-based movement
      * @param e input event containing axis/key-value
      */
-    @Override
-    public void performAction(float time, Event e){
-        float val = e.getValue();
-        if (java.lang.Math.abs(val) < 0.2f) return;
 
-        av = game.getAvatar();
-        fwd = new Vector4f(0f,0f,-1f,0f);
-        // rotate to world space and scale by time/input
-        fwd.mul(av.getWorldRotation());
-        fwd.mul(0.01f * time * -val);
-        // move avatar
-        oldPos = av.getWorldLocation();
-        newPos = oldPos.add(fwd.x(), fwd.y(), fwd.z());
-
-        // check ground collision for dolphin; reset back to 0f
-        if (newPos.y < 1.0f)    newPos.y = 0f;
-
-        av.setLocalLocation(newPos);
-    }
+	@Override
+	public void performAction(float time, Event e)
+	{	av = game.getAvatar();
+		oldPosition = av.getWorldLocation();
+		fwdDirection = new Vector4f(0f,0f,1f,1f);
+		fwdDirection.mul(av.getWorldRotation());
+		fwdDirection.mul(0.001f);
+		newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
+		av.setLocalLocation(newPosition);
+		protClient.sendMoveMessage(av.getWorldLocation());
+	}
 }
+
+
