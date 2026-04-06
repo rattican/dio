@@ -28,7 +28,6 @@ public class FwdAction extends AbstractInputAction
 	private Vector4f fwdDirection;
 	private ProtocolClient protClient;
 
-
     public FwdAction(MyGame g, ProtocolClient p) { 
         game = g;
         protClient = p;
@@ -43,14 +42,21 @@ public class FwdAction extends AbstractInputAction
 	@Override
 	public void performAction(float time, Event e)
 	{	av = game.getAvatar();
-		oldPosition = av.getWorldLocation();
-		fwdDirection = new Vector4f(0f,0f,1f,1f);
-		fwdDirection.mul(av.getWorldRotation());
-		fwdDirection.mul(0.001f);
-		newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
-		av.setLocalLocation(newPosition);
-		protClient.sendMoveMessage(av.getWorldLocation());
-	}
+    	oldPosition = av.getWorldLocation();
+    	fwdDirection = new Vector4f(0f,0f,1f,1f);
+    	fwdDirection.mul(av.getWorldRotation());
+    
+    // Scale movement
+   		fwdDirection.mul(0.1f * time); 
+    
+    	newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
+    	av.setLocalLocation(newPosition);
+    // THE FIX: Only send the message if the network is actually ready
+    	if (protClient != null) 
+    	{
+        	protClient.sendMoveMessage(av.getWorldLocation());
+    	}
+		}
 }
 
 

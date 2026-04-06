@@ -443,7 +443,10 @@ public class MyGame extends VariableFrameRateGame
 		setupNetworking();
 
 	}
-
+	protected void processNetworking(float elapsTime) {
+    	if (protClient != null)
+        	protClient.processPackets();
+		}
 	@Override
 	public void update()
 	{	// updates elapsed time
@@ -454,9 +457,6 @@ public class MyGame extends VariableFrameRateGame
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
 		//checking if packets received by the client from the server
-		if (protClient != null) {
-        protClient.processPackets();
-    }
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -472,6 +472,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
+		processNetworking((float)elapsTime);
 	}
 
 	@Override
