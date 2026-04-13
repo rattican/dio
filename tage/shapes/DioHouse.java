@@ -4,7 +4,7 @@ import tage.*;
 import org.joml.*;
 
 /**
- * DolphinHouse is custom ManualObject created to represent the dolphin's house. It serves as the gallery to store the three photos taken at each site, once win conditions are met.
+ * DioHouse is custom ManualObject created to represent Dio's house. It serves as the gallery to store the three photos taken at each site, once win conditions are met.
  * <p>
  * The player must 'hop off' the avatar using the [SPACE] button when all three photos are taken when at this spawnpoint. The photos should be hung on a wall.
  * 
@@ -19,8 +19,8 @@ import org.joml.*;
  * @version Spring 2026
  */
 
-public class DolphinHouse extends ManualObject {
-    public DolphinHouse() {
+public class DioHouse extends ManualObject {
+    public DioHouse() {
         super();
         
         // 4-wall rectangular house + roof: 4 walls × 6 vertices = 24 vertices
