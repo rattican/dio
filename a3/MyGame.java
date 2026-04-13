@@ -1,4 +1,4 @@
-package a2;
+package a3;
 
 import tage.*;
 import tage.shapes.*;
@@ -18,8 +18,17 @@ import tage.nodeControllers.*;
 import org.joml.Vector3f;
 
 import a3.MyGame;
-
 import org.joml.Matrix4f;
+
+/*
+	Milestone 1: Networking, SkyBox, Terrain, UV Unwrapped Models (2)
+	
+	TO DO:
+	Modify second camera so skybox is not visible in overhead view
+	Add terrain features in distance
+	Replace main dolphin model with the UV unwrapped cat model from Blender
+	**Rewrite pyramid game to 2.5D neighborhood combat game
+*/
 
 public class MyGame extends VariableFrameRateGame
 {
@@ -184,7 +193,7 @@ public class MyGame extends VariableFrameRateGame
 
 		sky = new GameObject(GameObject.root(), skyS, skyTx);
 		sky.setLocalLocation(new Vector3f(0f,0f,0f));
-		sky.setLocalScale(new Matrix4f().scaling(-250f,250f,250f));	// flips inside out
+		sky.setLocalScale(new Matrix4f().scaling(-200f));	// flips inside out
 		sky.getRenderStates().hasLighting(false);
 
 		ground = new GameObject(GameObject.root(), groundS, groundTx);
@@ -408,6 +417,13 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f hud2Color = new Vector3f(0,1,0);
 		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2("Avatar: " + dol.getWorldLocation().toString(), hud2Color, 1350, 720);
+
+		// update skybox with camera
+		Vector3f camLoc = engine.getRenderSystem()
+                        .getViewport("MAIN")
+                        .getCamera()
+                        .getLocation();
+		sky.setLocalLocation(camLoc);
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
