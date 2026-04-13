@@ -27,7 +27,10 @@ import org.joml.Matrix4f;
 /*
 	Milestone 1: Networking, SkyBox, Terrain, UV Unwrapped Models (2)
 	
-	TO DO:
+	Haley's TO DO:
+	xxxx
+
+	Emily's TO DO:
 	Modify second camera so skybox is not visible in overhead view
 	Add terrain features in distance
 	Replace main dolphin model with the UV unwrapped cat model from Blender
@@ -76,9 +79,9 @@ public class MyGame extends VariableFrameRateGame
 
 	// input manager and game object related stuff
 	private InputManager im;
-	private GameObject dol, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo;
-	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS;
-	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT;
+	private GameObject dol, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain;
+	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS;;
+	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
 	private Light light1, light2, light3, light4;
 
 	private CameraOrbit3D orbit;
@@ -240,6 +243,7 @@ public class MyGame extends VariableFrameRateGame
 		skyS = new Sphere();
 		logoS = new Plane();
 		ghostS = new ImportedModel("miku.obj");
+		terrainS = new TerrainPlane(128);
 	}
 
 	@Override
@@ -253,6 +257,8 @@ public class MyGame extends VariableFrameRateGame
 		skyTx = new TextureImage("day_sky.jpg");
 		logoTx = new TextureImage("dolphin_logo.png");
 		ghostT = new TextureImage("miku.png"); 
+		grassTx = new TextureImage("grass.jpg");
+		hillsTx = new TextureImage("hills.jpg");
 	}
 
 	@Override
@@ -273,7 +279,7 @@ public class MyGame extends VariableFrameRateGame
 		sky.getRenderStates().hasLighting(false);
 
 		ground = new GameObject(GameObject.root(), groundS, groundTx);
-		ground.setLocalScale(new Matrix4f().scaling(200f, 1f, 200f));
+		ground.setLocalScale(new Matrix4f().scaling(20f, 1f, 20f));
 		// ground.setLocalScale(new Matrix4f().scaling(200f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
 
@@ -285,6 +291,17 @@ public class MyGame extends VariableFrameRateGame
 			dol = new GameObject(GameObject.root(), dolS, doltx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
 		}
+		
+		terrain = new GameObject(GameObject.root(), terrainS, grassTx);
+		terrain.setLocalLocation(new Vector3f(0f,0f,0f));
+		terrain.setLocalScale(new Matrix4f().scaling(20f,1f,20f));
+		terrain.setHeightMap(hillsTx);
+		// set tiling for terrain textures
+		terrain.getRenderStates().setTiling(1);
+		terrain.getRenderStates().setTileFactor(10);
+
+		// build dolphin in the center of the window
+		dol = new GameObject(GameObject.root(), dolS, doltx);
 		dol.setLocalTranslation(initialTranslation);
 		dol.setLocalScale(initialScale);
 		dol.setLocalRotation(initialRotation);
@@ -511,6 +528,11 @@ public class MyGame extends VariableFrameRateGame
                         .getCamera()
                         .getLocation();
 		sky.setLocalLocation(camLoc);
+
+		// update altitude of dolphin based on height map
+		Vector3f loc = dol.getWorldLocation();
+		float height = terrain.getHeight(loc.x(), loc.z());
+		dol.setLocalLocation(new Vector3f(loc.x(), height + 0.5f, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
