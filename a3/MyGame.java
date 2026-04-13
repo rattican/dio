@@ -68,14 +68,18 @@ public class MyGame extends VariableFrameRateGame
 	// input manager and game object related stuff
 	private InputManager im;
 	private GameObject dol, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo;
-	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS;
-	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx;
+	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS;
+	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT;
 	private Light light1, light2, light3, light4;
 
 	private CameraOrbit3D orbit;
 
-	public MyGame(String serverAddress, int serverPort, String protocol) { 
+	//for networking:
+	private String myType; // to make sure which character is it
+
+	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
+		this.myType = role;
 		gm = new GhostManager(this);
 		this.serverAddress = serverAddress;
 		this.serverPort = serverPort;
@@ -88,14 +92,15 @@ public class MyGame extends VariableFrameRateGame
 	public static void main(String[] args)
 	{	
 		System.setProperty("jogl.disable.opengl.core", "true");
-		if (args.length < 3) {
-        	System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol>");
-    	} else {
-        	MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2]);
-        	engine = new Engine(game);
-       		engine.initializeSystem();
-        	game.buildGame();
-        	game.startGame();
+		if (args.length < 4) {
+        	System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol> <Role>");
+    }
+    else {
+        MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2], args[3]);
+        engine = new Engine(game);
+        engine.initializeSystem();
+        game.buildGame();
+        game.startGame();
     }
 
 	}
@@ -106,14 +111,16 @@ public class MyGame extends VariableFrameRateGame
 
 	//from code07a2
 	//public GameObject getAvatar() { return avatar; }
-	//public ObjShape getGhostShape() { return ghostS; }
-	public ObjShape getGhostShape() { return dolS; }
-	public TextureImage getGhostTexture() { return doltx; }
+	public ObjShape getGhostShape() { return ghostS; }
+	//public ObjShape getGhostShape() { return dolS; }
+	public TextureImage getGhostTexture() { return ghostT; }
 	public GhostManager getGhostManager() { return gm; }
+	public ObjShape getDolphinShape() { return dolS; }
 
+	public TextureImage getDolphinTexture() { return doltx; }
 	public Engine getEngine() {return engine;}
 	public void setIsConnected(boolean v) { isConnected = v; }
-
+	public String getAvatarType() { return myType; }// Returns "dolphin" or "miku" based on bat}
 	//set up networking
 	private void setupNetworking() {
     	isClientConnected = false;
@@ -202,7 +209,8 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes()
-	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+	{	
+		dolS = new ImportedModel("dolphinHighPoly.obj");
 		pyrS = new Pyramid();
 		homeS = new DolphinHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -212,6 +220,7 @@ public class MyGame extends VariableFrameRateGame
 		groundS = new Plane();
 		skyS = new Sphere();
 		logoS = new Plane();
+		ghostS = new ImportedModel("miku.obj");
 	}
 
 	@Override
@@ -224,6 +233,7 @@ public class MyGame extends VariableFrameRateGame
 		groundTx = new TextureImage("rocky_ground.jpg");
 		skyTx = new TextureImage("day_sky.jpg");
 		logoTx = new TextureImage("dolphin_logo.png");
+		ghostT = new TextureImage("miku.png"); 
 	}
 
 	@Override
@@ -248,8 +258,14 @@ public class MyGame extends VariableFrameRateGame
 		// ground.setLocalScale(new Matrix4f().scaling(200f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
 
-		// build dolphin in the center of the window
-		dol = new GameObject(GameObject.root(), dolS, doltx);
+		// build local avatar in the center of the window
+		if (myType.equalsIgnoreCase("miku")) {
+			dol = new GameObject(GameObject.root(), ghostS, ghostT);
+			initialScale = (new Matrix4f()).scaling(0.25f);
+		} else {
+			dol = new GameObject(GameObject.root(), dolS, doltx);
+			initialScale = (new Matrix4f()).scaling(3.0f);
+		}
 		dol.setLocalTranslation(initialTranslation);
 		dol.setLocalScale(initialScale);
 		dol.setLocalRotation(initialRotation);
@@ -367,6 +383,8 @@ public class MyGame extends VariableFrameRateGame
 		mainCam.setLocation(new Vector3f(0,5,15));
 		mainCam.lookAt(dol.getWorldLocation());
 
+		setupNetworking();
+
 		// input manager and mappings
 		im = engine.getInputManager();
 
@@ -440,8 +458,6 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		setupNetworking();
-
 	}
 	protected void processNetworking(float elapsTime) {
     	if (protClient != null)

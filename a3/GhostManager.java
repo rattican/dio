@@ -19,12 +19,28 @@ public class GhostManager
 	{	game = (MyGame)vfrg;
 	}
 	
-	public void createGhostAvatar(UUID id, Vector3f position) throws IOException
-	{	System.out.println("adding ghost with ID --> " + id);
-		ObjShape s = game.getGhostShape();
-		TextureImage t = game.getGhostTexture();
+	public void createGhostAvatar(UUID id, Vector3f position, String modelName) throws IOException
+	{	
+		ObjShape s;
+    	TextureImage t;
+    	float scale;
+		System.out.println("adding ghost with ID --> " + id);
+		if (modelName.equalsIgnoreCase("miku")) 
+		{
+        	s = game.getGhostShape(); // Miku
+        	t = game.getGhostTexture();
+        	scale = 0.25f;
+    	} else {
+        	s = game.getDolphinShape(); // Dolphin
+        	t = game.getDolphinTexture();
+        	scale = 3.0f;
+    	}
+		//Vector3f newposition = new Vector3f(position.x(), position.y() + 0.5f, position.z());
+		// FIX the MIKU position so that the feet are on the ground
+		
 		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
-		Matrix4f initialScale = (new Matrix4f()).scaling(0.25f);
+		newAvatar.getRenderStates().setRenderHiddenFaces(true);
+		Matrix4f initialScale = (new Matrix4f()).scaling(0.25f);		
 		newAvatar.setLocalScale(initialScale);
 		ghostAvatars.add(newAvatar);
 	}
@@ -54,7 +70,9 @@ public class GhostManager
 	public void updateGhostAvatar(UUID id, Vector3f position)
 	{	GhostAvatar ghostAvatar = findAvatar(id);
 		if (ghostAvatar != null)
-		{	ghostAvatar.setPosition(position);
+		{	
+			Vector3f upperPosition = new Vector3f(position.x(), position.y() + 0.5f, position.z());
+        	ghostAvatar.setPosition(upperPosition);
 		}
 		else
 		{	System.out.println("tried to update ghost avatar position, but unable to find ghost in list");

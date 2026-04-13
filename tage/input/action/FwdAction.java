@@ -16,7 +16,7 @@ import a3.MyGame;
  * Movement is scaled by elapsed frame time for smooth frame-rate motion.
  * 
  * Added by:
- * @author Emily Kuang
+ * @author Emily Kuang， Hoi Yin Li
  * @version Spring 2026
  */
 
@@ -44,11 +44,9 @@ public class FwdAction extends AbstractInputAction
 	{	av = game.getAvatar();
     	oldPosition = av.getWorldLocation();
     	fwdDirection = new Vector4f(0f,0f,1f,1f);
-    	fwdDirection.mul(av.getWorldRotation());
-    
+    	fwdDirection.mul(av.getWorldRotation());   
     // Scale movement
    		fwdDirection.mul(0.1f * time); 
-    
     	newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
     	av.setLocalLocation(newPosition);
     // THE FIX: Only send the message if the network is actually ready

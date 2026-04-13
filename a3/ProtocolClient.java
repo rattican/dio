@@ -57,29 +57,36 @@ public class ProtocolClient extends GameConnectionClient
 				ghostManager.removeGhostAvatar(ghostID);
 			}
 			
-			// Handle CREATE message
-			// Format: (create,remoteId,x,y,z)
-			// AND
-			// Handle DETAILS_FOR message
-			// Format: (dsfr,remoteId,x,y,z)
-			if (messageTokens[0].compareTo("create") == 0 || (messageTokens[0].compareTo("dsfr") == 0))
-			{	// create a new ghost avatar
-				// Parse out the id into a UUID
-				UUID ghostID = UUID.fromString(messageTokens[1]);
-				
-				// Parse out the position into a Vector3f
-				Vector3f ghostPosition = new Vector3f(
+			if (messageTokens[0].compareTo("create") == 0 || messageTokens[0].compareTo("dsfr") == 0) {
+    			UUID ghostID;
+    			Vector3f ghostPos;
+    			String modelName;
+
+			if (messageTokens[0].equals("create")) {
+				// Format: create, uuid, x, y, z, model
+				ghostID = UUID.fromString(messageTokens[1]);
+				ghostPos = new Vector3f(
 					Float.parseFloat(messageTokens[2]),
 					Float.parseFloat(messageTokens[3]),
 					Float.parseFloat(messageTokens[4]));
-
-				try
-				{	ghostManager.createGhostAvatar(ghostID, ghostPosition);
-				}	catch (IOException e)
-				{	System.out.println("error creating ghost avatar");
-				}
+				modelName = messageTokens[5];
+			} else {
+				// Format: dsfr, remoteID, localID, x, y, z, model
+				ghostID = UUID.fromString(messageTokens[2]); // localID of the sender
+				ghostPos = new Vector3f(
+					Float.parseFloat(messageTokens[3]),
+					Float.parseFloat(messageTokens[4]),
+					Float.parseFloat(messageTokens[5]));
+				modelName = messageTokens[6];
 			}
-			
+
+			try {
+				ghostManager.createGhostAvatar(ghostID, ghostPos, modelName);
+			} catch (IOException e) { 
+				e.printStackTrace(); 
+			}
+	}
+
 			// Handle WANTS_DETAILS message
 			// Format: (wsds,remoteId)
 			if (messageTokens[0].compareTo("wsds") == 0)
@@ -135,16 +142,15 @@ public class ProtocolClient extends GameConnectionClient
 	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
 
 	public void sendCreateMessage(Vector3f position)
-	{	try 
-		{	String message = new String("create," + id.toString());
-			message += "," + position.x();
-			message += "," + position.y();
-			message += "," + position.z();
-			
-			sendPacket(message);
-		} catch (IOException e) 
-		{	e.printStackTrace();
-	}	}
+	{   
+		try {   
+			String message = "create," + id.toString();
+        	message += "," + position.x() + "," + position.y() + "," + position.z();
+        	message += "," + game.getAvatarType(); 
+        	sendPacket(message);
+    	} 
+		catch (IOException e) { e.printStackTrace(); }
+	}
 	
 	// Informs the server of the local avatar's position. The server then 
 	// forwards this message to the client with the ID value matching remoteId. 
@@ -153,17 +159,14 @@ public class ProtocolClient extends GameConnectionClient
 	// Message Format: (dsfr,remoteId,localId,x,y,z) where x, y, and z represent the position.
 
 	public void sendDetailsForMessage(UUID remoteId, Vector3f position)
-	{	try 
-		{	String message = new String("dsfr," + remoteId.toString() + "," + id.toString());
-			message += "," + position.x();
-			message += "," + position.y();
-			message += "," + position.z();
-			
-			sendPacket(message);
-		} catch (IOException e) 
-		{	e.printStackTrace();
-	}	}
-	
+	{   
+		try {   
+			String message = "dsfr," + remoteId.toString() + "," + id.toString();
+        	message += "," + position.x() + "," + position.y() + "," + position.z();
+        	message += "," + game.getAvatarType();
+        	sendPacket(message);
+    	} catch (IOException e) { e.printStackTrace(); }
+	}
 	// Informs the server that the local avatar has changed position.  
 	// Message Format: (move,localId,x,y,z) where x, y, and z represent the position.
 
