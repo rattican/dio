@@ -45,33 +45,62 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			}
 			
 			// CREATE -- Case where server receives a create message (to specify avatar location)
-			// Received Message Format: (create,localId,x,y,z,model)
+			// Received Message Format: (create,localId,x,y,z,yaw,model) or (create,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("create") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
+			{   UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				String model = messageTokens[5];
-				sendCreateMessages(clientID, pos, model);
+				String yaw;
+				String model;
+				if (messageTokens.length == 7) {
+					// New format with yaw: 7 tokens
+					yaw = messageTokens[5];
+					model = messageTokens[6];
+				} else {
+					// Old format without yaw: 6 tokens
+					yaw = "135.0";
+					model = messageTokens[5];
+				}
+				sendCreateMessages(clientID, pos, yaw, model);
 				sendWantsDetailsMessages(clientID);
 			}
 			
 			// DETAILS-FOR --- Case where server receives a details for message
-			// Received Message Format: (dsfr,remoteId,localId,x,y,z,model)
+			// Received Message Format: (dsfr,remoteId,localId,x,y,z,yaw,model) or (dsfr,remoteId,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("dsfr") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
+			{   UUID clientID = UUID.fromString(messageTokens[1]);
 				UUID remoteID = UUID.fromString(messageTokens[2]);
 				String[] pos = {messageTokens[3], messageTokens[4], messageTokens[5]};
-				String model = messageTokens[6];
-				sendDetailsForMessage(clientID, remoteID, pos, model);
+				String yaw;
+				String model;
+				if (messageTokens.length == 8) {
+					// New format with yaw: 8 tokens
+					yaw = messageTokens[6];
+					model = messageTokens[7];
+				} else {
+					// Old format without yaw: 7 tokens
+					yaw = "135.0";
+					model = messageTokens[6];
+				}
+				sendDetailsForMessage(clientID, remoteID, pos, yaw, model);
 			}
-			
+		
 			// MOVE --- Case where server receives a move message
-			// Received Message Format: (move,localId,x,y,z)
-			if(messageTokens[0].compareTo("move") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
-				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				sendMoveMessages(clientID, pos);
-	}	}	}
-
+		// Received Message Format: (move,localId,x,y,z,yaw) or (move,localId,x,y,z)
+		if(messageTokens[0].compareTo("move") == 0)
+		{	UUID clientID = UUID.fromString(messageTokens[1]);
+			String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
+			String yaw;
+			if (messageTokens.length >= 6) {
+				// New format with yaw
+				yaw = messageTokens[5];
+			} else {
+				// Old format without yaw
+				yaw = "135.0";
+			}
+			sendMoveMessages(clientID, pos, yaw);
+		}
+		}
+	}
 	// Informs the client who just requested to join the server if their if their 
 	// request was able to be granted. 
 	// Message Format: (join,success) or (join,failure)
@@ -111,12 +140,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// connected to the server. 
 	// Message Format: (create,remoteId,x,y,z,model) where x, y, and z represent the position
 
-	public void sendCreateMessages(UUID clientID, String[] position, String model)
+	public void sendCreateMessages(UUID clientID, String[] position, String yaw, String model)
 	{	try 
 		{	String message = new String("create," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			message += "," + model;
 			forwardPacketToAll(message, clientID);
 		} 
@@ -130,12 +160,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// remoteId is used to send this message to the proper client. 
 	// Message Format: (dsfr,remoteId,x,y,z,model) where x, y, and z represent the position.
 
-	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String model)
+	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String yaw, String model)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			message += "," + model;
 			sendPacket(message, clientID);
 		} 
@@ -162,12 +193,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// connected to the server when it receives a MOVE message from the remote client.   
 	// Message Format: (move,remoteId,x,y,z) where x, y, and z represent the position.
 
-	public void sendMoveMessages(UUID clientID, String[] position)
+	public void sendMoveMessages(UUID clientID, String[] position, String yaw)
 	{	try 
 		{	String message = new String("move," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 

@@ -49,11 +49,8 @@ public class FwdAction extends AbstractInputAction
    		fwdDirection.mul(0.1f * time); 
     	newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
     	av.setLocalLocation(newPosition);
-    // THE FIX: Only send the message if the network is actually ready
-    	if (protClient != null) 
-    	{
-        	protClient.sendMoveMessage(av.getWorldLocation());
-    	}
+    // Send network update
+    	game.sendNetworkMovementUpdate();
 		}
 }
 

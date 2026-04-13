@@ -108,6 +108,16 @@ public class MyGame extends VariableFrameRateGame
 	// getters
 	public GameObject getAvatar() { return dol; }
 	public Vector3f getPlayerPosition() { return dol.getWorldLocation(); }
+	public float getPlayerYaw() { 
+		// Extract yaw from the rotation matrix
+		Matrix4f rotMatrix = dol.getWorldRotation();
+		// For a Y-axis rotation, the yaw can be extracted from the rotation matrix
+		// Using atan2 of elements affected by Y rotation
+		float m00 = rotMatrix.m00();
+		float m02 = rotMatrix.m02();
+		float yaw = (float)java.lang.Math.atan2(m02, m00);
+		return (float)java.lang.Math.toDegrees(yaw);
+	}
 
 	//from code07a2
 	//public GameObject getAvatar() { return avatar; }
@@ -261,7 +271,7 @@ public class MyGame extends VariableFrameRateGame
 		// build local avatar in the center of the window
 		if (myType.equalsIgnoreCase("miku")) {
 			dol = new GameObject(GameObject.root(), ghostS, ghostT);
-			initialScale = (new Matrix4f()).scaling(0.25f);
+			initialScale = (new Matrix4f()).scaling(0.55f);
 		} else {
 			dol = new GameObject(GameObject.root(), dolS, doltx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
@@ -572,6 +582,21 @@ public class MyGame extends VariableFrameRateGame
 		{	if(protClient != null && isClientConnected == true)
 			{	protClient.sendByeMessage();
 			}
+		}
+	}
+	
+	// Method to handle avatar rotation and send update to server
+	public void rotateAvatarAndSendUpdate(float yawDelta)
+	{	dol.globalYaw(yawDelta);
+		if (protClient != null)
+		{	protClient.sendMoveMessage(dol.getWorldLocation());
+		}
+	}
+	
+	// Method to send network movement update
+	public void sendNetworkMovementUpdate()
+	{	if (protClient != null)
+		{	protClient.sendMoveMessage(dol.getWorldLocation());
 		}
 	}
 }

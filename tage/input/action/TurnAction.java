@@ -32,8 +32,8 @@ public class TurnAction extends AbstractInputAction
         if (-0.2 < keyValue && keyValue < 0.2) return; // helped fix drifting
 
         float turnSpeed = 0.015f;
-        // rotate globally
-        GameObject av = game.getAvatar();
-        av.globalYaw(-turnSpeed * keyValue * time);
+        // rotate globally and send update to server
+        float yawDelta = -turnSpeed * keyValue * time;
+        game.rotateAvatarAndSendUpdate(yawDelta);
     }
 }

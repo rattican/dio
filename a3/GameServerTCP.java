@@ -64,31 +64,59 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 			}
 			
 			// Case where server receives a CREATE message
-			// Received Message Format: (create,localId,x,y,z,model)
+			// Received Message Format: (create,localId,x,y,z,yaw,model) or (create,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("create") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
+			{   UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				String model = messageTokens[5];
-				sendCreateMessages(clientID, pos, model);
+				String yaw;
+				String model;
+				if (messageTokens.length == 7) {
+					// New format with yaw: 7 tokens
+					yaw = messageTokens[5];
+					model = messageTokens[6];
+				} else {
+					// Old format without yaw: 6 tokens
+					yaw = "135.0";
+					model = messageTokens[5];
+				}
+				sendCreateMessages(clientID, pos, yaw, model);
 				sendWantsDetailsMessages(clientID);
 			}
 			
 			// Case where server receives a DETAILS-FOR message
-			// Received Message Format: (dsfr,remoteId,localId,x,y,z,model)
+			// Received Message Format: (dsfr,remoteId,localId,x,y,z,yaw,model) or (dsfr,remoteId,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("dsfr") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
+			{   UUID clientID = UUID.fromString(messageTokens[1]);
 				UUID remoteID = UUID.fromString(messageTokens[2]);
 				String[] pos = {messageTokens[3], messageTokens[4], messageTokens[5]};
-				String model = messageTokens[6];
-				sendDetailsForMessage(clientID, remoteID, pos, model);
+				String yaw;
+				String model;
+				if (messageTokens.length == 8) {
+					// New format with yaw: 8 tokens
+					yaw = messageTokens[6];
+					model = messageTokens[7];
+				} else {
+					// Old format without yaw: 7 tokens
+					yaw = "135.0";
+					model = messageTokens[6];
+				}
+				sendDetailsForMessage(clientID, remoteID, pos, yaw, model);
 			}
 			
 			// Case where server receives a MOVE message
-			// Received Message Format: (move,localId,x,y,z)
+			// Received Message Format: (move,localId,x,y,z,yaw) or (move,localId,x,y,z)
 			if(messageTokens[0].compareTo("move") == 0)
-			{	UUID clientID = UUID.fromString(messageTokens[1]);
+			{   UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				sendMoveMessages(clientID, pos);
+				String yaw;
+				if (messageTokens.length >= 6) {
+					// New format with yaw
+					yaw = messageTokens[5];
+				} else {
+					// Old format without yaw
+					yaw = "135.0";
+				}
+				sendMoveMessages(clientID, pos, yaw);
 			}
 		}
 	}
@@ -137,14 +165,15 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 	 * server. This message also triggers WANTS_DETAILS messages to be sent to all client 
 	 * connected to the server. 
 	 * <p>
-	 * Message Format: (create,remoteId,x,y,z,model) where x, y, and z represent the position
+	 * Message Format: (create,remoteId,x,y,z,yaw,model) where x, y, z represent the position and yaw is rotation
 	 */
-	public void sendCreateMessages(UUID clientID, String[] position, String model)
+	public void sendCreateMessages(UUID clientID, String[] position, String yaw, String model)
 	{	try 
 		{	String message = new String("create," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			message += "," + model;
 			forwardPacketToAll(message, clientID);
 		} 
@@ -159,14 +188,15 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 	 * messages localId becomes the remoteId for this message, and the remote clients messages 
 	 * remoteId is used to send this message to the proper client. 
 	 * <p>
-	 * Message Format: (dsfr,remoteId,x,y,z,model) where x, y, and z represent the position.
+	 * Message Format: (dsfr,remoteId,x,y,z,yaw,model) where x, y, z represent the position and yaw is rotation.
 	 */
-	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String model)
+	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String yaw, String model)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			message += "," + model;
 			sendPacket(message, clientID);
 		} 
@@ -197,14 +227,15 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 	 * the new position of the remote avatar. This message is meant to be forwarded to all clients
 	 * connected to the server when it receives a MOVE message from the remote client.   
 	 * <p>
-	 * Message Format: (move,remoteId,x,y,z) where x, y, and z represent the position.
+	 * Message Format: (move,remoteId,x,y,z,yaw) where x, y, z represent the position and yaw is rotation.
 	 */
-	public void sendMoveMessages(UUID clientID, String[] position)
+	public void sendMoveMessages(UUID clientID, String[] position, String yaw)
 	{	try 
 		{	String message = new String("move," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + yaw;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 

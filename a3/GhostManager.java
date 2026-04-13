@@ -19,29 +19,35 @@ public class GhostManager
 	{	game = (MyGame)vfrg;
 	}
 	
-	public void createGhostAvatar(UUID id, Vector3f position, String modelName) throws IOException
+	public void createGhostAvatar(UUID id, Vector3f position, float yaw, String modelName) throws IOException
 	{	
 		ObjShape s;
     	TextureImage t;
     	float scale;
+		float yOffset = 0f;
 		System.out.println("adding ghost with ID --> " + id);
 		if (modelName.equalsIgnoreCase("miku")) 
 		{
         	s = game.getGhostShape(); // Miku
         	t = game.getGhostTexture();
         	scale = 0.25f;
+        	yOffset = 0.5f; // Miku needs Y offset to keep feet on ground
     	} else {
         	s = game.getDolphinShape(); // Dolphin
         	t = game.getDolphinTexture();
         	scale = 3.0f;
+        	yOffset = 0f; // Dolphin doesn't need Y offset
     	}
-		//Vector3f newposition = new Vector3f(position.x(), position.y() + 0.5f, position.z());
-		// FIX the MIKU position so that the feet are on the ground
+		// Apply Y offset based on model type
+		Vector3f adjustedPosition = new Vector3f(position.x(), position.y() + yOffset, position.z());
 		
-		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
+		GhostAvatar newAvatar = new GhostAvatar(id, s, t, adjustedPosition, modelName);
 		newAvatar.getRenderStates().setRenderHiddenFaces(true);
 		Matrix4f initialScale = (new Matrix4f()).scaling(scale);		
 		newAvatar.setLocalScale(initialScale);
+		// Set the rotation based on yaw
+		Matrix4f rotation = new Matrix4f().rotationY((float)java.lang.Math.toRadians(yaw));
+		newAvatar.setLocalRotation(rotation);
 		ghostAvatars.add(newAvatar);
 	}
 	
@@ -67,12 +73,20 @@ public class GhostManager
 		}		
 		return null;
 	}
-	public void updateGhostAvatar(UUID id, Vector3f position)
+	public void updateGhostAvatar(UUID id, Vector3f position, float yaw)
 	{	GhostAvatar ghostAvatar = findAvatar(id);
 		if (ghostAvatar != null)
 		{	
-			Vector3f upperPosition = new Vector3f(position.x(), position.y() + 0.5f, position.z());
-        	ghostAvatar.setPosition(upperPosition);
+			// Apply Y offset based on model type
+			float yOffset = 0f;
+			if (ghostAvatar.getModelName().equalsIgnoreCase("miku")) {
+				yOffset = 0.5f;
+			}
+			Vector3f adjustedPosition = new Vector3f(position.x(), position.y() + yOffset, position.z());
+        	ghostAvatar.setPosition(adjustedPosition);
+        	// Update rotation based on yaw
+        	Matrix4f rotation = new Matrix4f().rotationY((float)java.lang.Math.toRadians(yaw));
+        	ghostAvatar.setLocalRotation(rotation);
 		}
 		else
 		{	System.out.println("tried to update ghost avatar position, but unable to find ghost in list");

@@ -29,6 +29,6 @@ public class KeyboardTurnLeftAction extends AbstractInputAction {
      */
     @Override
     public void performAction(float time, Event e) {
-        game.getAvatar().globalYaw(-0.03f);
+        game.rotateAvatarAndSendUpdate(-0.03f);
     }
 }

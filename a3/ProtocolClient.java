@@ -62,26 +62,45 @@ public class ProtocolClient extends GameConnectionClient
     			Vector3f ghostPos;
     			String modelName;
 
-			if (messageTokens[0].equals("create")) {
-				// Format: create, uuid, x, y, z, model
-				ghostID = UUID.fromString(messageTokens[1]);
-				ghostPos = new Vector3f(
-					Float.parseFloat(messageTokens[2]),
-					Float.parseFloat(messageTokens[3]),
-					Float.parseFloat(messageTokens[4]));
-				modelName = messageTokens[5];
+		float yaw = 0f;
+		if (messageTokens[0].equals("create")) {
+			// Format: create, uuid, x, y, z, [yaw], model
+			// Handle both old format (6 tokens) and new format (7 tokens with yaw)
+			ghostID = UUID.fromString(messageTokens[1]);
+			ghostPos = new Vector3f(
+				Float.parseFloat(messageTokens[2]),
+				Float.parseFloat(messageTokens[3]),
+				Float.parseFloat(messageTokens[4]));
+			if (messageTokens.length == 7) {
+				// New format with yaw: create, uuid, x, y, z, yaw, model
+				yaw = Float.parseFloat(messageTokens[5]);
+				modelName = messageTokens[6];
 			} else {
-				// Format: dsfr, remoteId, x, y, z, model
-				ghostID = UUID.fromString(messageTokens[1]);
-				ghostPos = new Vector3f(
-					Float.parseFloat(messageTokens[2]),
-					Float.parseFloat(messageTokens[3]),
-					Float.parseFloat(messageTokens[4]));
+				// Old format without yaw: create, uuid, x, y, z, model
+				yaw = 135.0f; // default yaw
 				modelName = messageTokens[5];
 			}
+		} else {
+			// Format: dsfr, remoteId, x, y, z, [yaw], model
+			// Handle both old format (6 tokens) and new format (7 tokens with yaw)
+			ghostID = UUID.fromString(messageTokens[1]);
+			ghostPos = new Vector3f(
+				Float.parseFloat(messageTokens[2]),
+				Float.parseFloat(messageTokens[3]),
+				Float.parseFloat(messageTokens[4]));
+			if (messageTokens.length == 7) {
+				// New format with yaw: dsfr, remoteId, x, y, z, yaw, model
+				yaw = Float.parseFloat(messageTokens[5]);
+				modelName = messageTokens[6];
+			} else {
+				// Old format without yaw: dsfr, remoteId, x, y, z, model
+				yaw = 135.0f; // default yaw
+				modelName = messageTokens[5];
+			}
+		}
 
-			try {
-				ghostManager.createGhostAvatar(ghostID, ghostPos, modelName);
+		try {
+			ghostManager.createGhostAvatar(ghostID, ghostPos, yaw, modelName);
 			} catch (IOException e) { 
 				e.printStackTrace(); 
 			}
@@ -98,7 +117,7 @@ public class ProtocolClient extends GameConnectionClient
 			}
 			
 			// Handle MOVE message
-			// Format: (move,remoteId,x,y,z)
+			// Format: (move,remoteId,x,y,z[,yaw])
 			if (messageTokens[0].compareTo("move") == 0)
 			{
 				// move a ghost avatar
@@ -111,7 +130,12 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[3]),
 					Float.parseFloat(messageTokens[4]));
 				
-				ghostManager.updateGhostAvatar(ghostID, ghostPosition);
+				float yaw = 135.0f; // default yaw
+				if (messageTokens.length > 5) {
+					// New format includes yaw
+					yaw = Float.parseFloat(messageTokens[5]);
+				}
+				ghostManager.updateGhostAvatar(ghostID, ghostPosition, yaw);
 	}	}	}
 	
 	// The initial message from the game client requesting to join the 
@@ -139,13 +163,14 @@ public class ProtocolClient extends GameConnectionClient
 	// Informs the server of the clients Avatars position. The server 
 	// takes this message and forwards it to all other clients registered 
 	// with the server.
-	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
+	// Message Format: (create,localId,x,y,z,yaw,model) where x, y, z represent position and yaw is rotation
 
 	public void sendCreateMessage(Vector3f position)
 	{   
 		try {   
 			String message = "create," + id.toString();
         	message += "," + position.x() + "," + position.y() + "," + position.z();
+        	message += "," + game.getPlayerYaw();
         	message += "," + game.getAvatarType(); 
         	sendPacket(message);
     	} 
@@ -156,19 +181,20 @@ public class ProtocolClient extends GameConnectionClient
 	// forwards this message to the client with the ID value matching remoteId. 
 	// This message is generated in response to receiving a WANTS_DETAILS message 
 	// from the server.
-	// Message Format: (dsfr,remoteId,localId,x,y,z) where x, y, and z represent the position.
+	// Message Format: (dsfr,remoteId,localId,x,y,z,yaw,model) where x, y, z represent position and yaw is rotation.
 
 	public void sendDetailsForMessage(UUID remoteId, Vector3f position)
 	{   
 		try {   
 			String message = "dsfr," + remoteId.toString() + "," + id.toString();
         	message += "," + position.x() + "," + position.y() + "," + position.z();
+        	message += "," + game.getPlayerYaw();
         	message += "," + game.getAvatarType();
         	sendPacket(message);
     	} catch (IOException e) { e.printStackTrace(); }
 	}
 	// Informs the server that the local avatar has changed position.  
-	// Message Format: (move,localId,x,y,z) where x, y, and z represent the position.
+	// Message Format: (move,localId,x,y,z,yaw) where x, y, z represent position and yaw is rotation.
 
 	public void sendMoveMessage(Vector3f position)
 	{	try 
@@ -176,6 +202,7 @@ public class ProtocolClient extends GameConnectionClient
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
+			message += "," + game.getPlayerYaw();
 			
 			sendPacket(message);
 		} catch (IOException e) 
