@@ -39,5 +39,8 @@ public class BackAction implements IAction {
         if (newLoc.y < 0f) newLoc.y = 0f;
 
         dol.setLocalLocation(newLoc);
+        
+        // Send network update
+        game.sendNetworkMovementUpdate();
     }
 }

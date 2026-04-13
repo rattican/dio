@@ -17,6 +17,10 @@ import net.java.games.input.Component.Identifier.*;
 import tage.nodeControllers.*;
 import org.joml.Vector3f;
 
+import tage.networking.IGameConnection.ProtocolType;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import a3.MyGame;
 import org.joml.Matrix4f;
 
@@ -32,6 +36,14 @@ import org.joml.Matrix4f;
 
 public class MyGame extends VariableFrameRateGame
 {
+	//networking
+	private GhostManager gm;
+	private String serverAddress;
+	private int serverPort;
+	private ProtocolType serverProtocol;
+	private ProtocolClient protClient;
+	private boolean isClientConnected = false;
+	private boolean isConnected = false;
 	private static Engine engine;
 
 	// game state stuff
@@ -65,25 +77,86 @@ public class MyGame extends VariableFrameRateGame
 	// input manager and game object related stuff
 	private InputManager im;
 	private GameObject dol, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo;
-	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS;
-	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx;
+	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS;
+	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT;
 	private Light light1, light2, light3, light4;
 
 	private CameraOrbit3D orbit;
 
-	public MyGame() { super(); }
+	//for networking:
+	private String myType; // to make sure which character is it
+
+	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
+		super(); 
+		this.myType = role;
+		gm = new GhostManager(this);
+		this.serverAddress = serverAddress;
+		this.serverPort = serverPort;
+		if (protocol.toUpperCase().compareTo("TCP") == 0)
+			this.serverProtocol = ProtocolType.TCP;
+		else
+			this.serverProtocol = ProtocolType.UDP;
+		}
 
 	public static void main(String[] args)
-	{	MyGame game = new MyGame();
-		engine = new Engine(game);
-		engine.initializeSystem();
-		game.buildGame();
-		game.startGame();
+	{	
+		System.setProperty("jogl.disable.opengl.core", "true");
+		if (args.length < 4) {
+        	System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol> <Role>");
+    }
+    else {
+        MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2], args[3]);
+        engine = new Engine(game);
+        engine.initializeSystem();
+        game.buildGame();
+        game.startGame();
+    }
+
 	}
 
 	// getters
 	public GameObject getAvatar() { return dol; }
+	public Vector3f getPlayerPosition() { return dol.getWorldLocation(); }
+	public float getPlayerYaw() { 
+		// Extract yaw from the rotation matrix
+		Matrix4f rotMatrix = dol.getWorldRotation();
+		// For a Y-axis rotation, the yaw can be extracted from the rotation matrix
+		// Using atan2 of elements affected by Y rotation
+		float m00 = rotMatrix.m00();
+		float m02 = rotMatrix.m02();
+		float yaw = (float)java.lang.Math.atan2(m02, m00);
+		return (float)java.lang.Math.toDegrees(yaw);
+	}
+
+	//from code07a2
+	//public GameObject getAvatar() { return avatar; }
+	public ObjShape getGhostShape() { return ghostS; }
+	//public ObjShape getGhostShape() { return dolS; }
+	public TextureImage getGhostTexture() { return ghostT; }
+	public GhostManager getGhostManager() { return gm; }
+	public ObjShape getDolphinShape() { return dolS; }
+
+	public TextureImage getDolphinTexture() { return doltx; }
 	public Engine getEngine() {return engine;}
+	public void setIsConnected(boolean v) { isConnected = v; }
+	public String getAvatarType() { return myType; }// Returns "dolphin" or "miku" based on bat}
+	//set up networking
+	private void setupNetworking() {
+    	isClientConnected = false;
+    	gm = new GhostManager(this); // Initialize manager for other players 
+    	try {
+        	protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
+    		} catch (UnknownHostException e) { e.printStackTrace();
+    	} catch (IOException e) { 
+			e.printStackTrace(); 
+			}
+    	if (protClient == null) {
+        	System.out.println("missing protocol host");
+    	} else {
+        	protClient.sendJoinMessage(); // Start  handshake 
+    	}
+	}
+
 
 	// check collisions; call in update()
 	private void checkCollisions() {
@@ -155,7 +228,8 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes()
-	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+	{	
+		dolS = new ImportedModel("dolphinHighPoly.obj");
 		pyrS = new Pyramid();
 		homeS = new DolphinHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -165,6 +239,7 @@ public class MyGame extends VariableFrameRateGame
 		groundS = new Plane();
 		skyS = new Sphere();
 		logoS = new Plane();
+		ghostS = new ImportedModel("miku.obj");
 	}
 
 	@Override
@@ -177,6 +252,7 @@ public class MyGame extends VariableFrameRateGame
 		groundTx = new TextureImage("rocky_ground.jpg");
 		skyTx = new TextureImage("day_sky.jpg");
 		logoTx = new TextureImage("dolphin_logo.png");
+		ghostT = new TextureImage("miku.png"); 
 	}
 
 	@Override
@@ -201,8 +277,14 @@ public class MyGame extends VariableFrameRateGame
 		// ground.setLocalScale(new Matrix4f().scaling(200f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
 
-		// build dolphin in the center of the window
-		dol = new GameObject(GameObject.root(), dolS, doltx);
+		// build local avatar in the center of the window
+		if (myType.equalsIgnoreCase("miku")) {
+			dol = new GameObject(GameObject.root(), ghostS, ghostT);
+			initialScale = (new Matrix4f()).scaling(0.55f);
+		} else {
+			dol = new GameObject(GameObject.root(), dolS, doltx);
+			initialScale = (new Matrix4f()).scaling(3.0f);
+		}
 		dol.setLocalTranslation(initialTranslation);
 		dol.setLocalScale(initialScale);
 		dol.setLocalRotation(initialRotation);
@@ -320,11 +402,13 @@ public class MyGame extends VariableFrameRateGame
 		mainCam.setLocation(new Vector3f(0,5,15));
 		mainCam.lookAt(dol.getWorldLocation());
 
+		setupNetworking();
+
 		// input manager and mappings
 		im = engine.getInputManager();
 
 		// movement actions
-		FwdAction fwdAction = new FwdAction(this);
+		FwdAction fwdAction = new FwdAction(this, protClient); // 		
 		BackAction backAction = new BackAction(this);
 		TurnAction turnAction = new TurnAction(this);
 		KeyboardTurnLeftAction kbLeft = new KeyboardTurnLeftAction(this);
@@ -394,7 +478,10 @@ public class MyGame extends VariableFrameRateGame
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
-
+	protected void processNetworking(float elapsTime) {
+    	if (protClient != null)
+        	protClient.processPackets();
+		}
 	@Override
 	public void update()
 	{	// updates elapsed time
@@ -404,7 +491,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
-
+		//checking if packets received by the client from the server
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
@@ -427,6 +514,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
+		processNetworking((float)elapsTime);
 	}
 
 	@Override
@@ -503,5 +591,28 @@ public class MyGame extends VariableFrameRateGame
 				break;
 		}
 		super.keyPressed(e);
+	}
+	private class SendCloseConnectionPacketAction extends AbstractInputAction
+	{	@Override
+		public void performAction(float time, net.java.games.input.Event evt) 
+		{	if(protClient != null && isClientConnected == true)
+			{	protClient.sendByeMessage();
+			}
+		}
+	}
+	
+	// Method to handle avatar rotation and send update to server
+	public void rotateAvatarAndSendUpdate(float yawDelta)
+	{	dol.globalYaw(yawDelta);
+		if (protClient != null)
+		{	protClient.sendMoveMessage(dol.getWorldLocation());
+		}
+	}
+	
+	// Method to send network movement update
+	public void sendNetworkMovementUpdate()
+	{	if (protClient != null)
+		{	protClient.sendMoveMessage(dol.getWorldLocation());
+		}
 	}
 }
