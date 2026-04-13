@@ -33,10 +33,10 @@ public class GhostManager
         	scale = 0.25f;
         	yOffset = 0.5f; // Miku needs Y offset to keep feet on ground
     	} else {
-        	s = game.getDolphinShape(); // Dolphin
-        	t = game.getDolphinTexture();
+        	s = game.getDioShape(); // Dio
+        	t = game.getDioTexture();
         	scale = 3.0f;
-        	yOffset = 0f; // Dolphin doesn't need Y offset
+        	yOffset = 0f; // Dio doesn't need Y offset
     	}
 		// Apply Y offset based on model type
 		Vector3f adjustedPosition = new Vector3f(position.x(), position.y() + yOffset, position.z());
