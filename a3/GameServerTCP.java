@@ -64,21 +64,23 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 			}
 			
 			// Case where server receives a CREATE message
-			// Received Message Format: (create,localId,x,y,z)
+			// Received Message Format: (create,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("create") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				sendCreateMessages(clientID, pos);
+				String model = messageTokens[5];
+				sendCreateMessages(clientID, pos, model);
 				sendWantsDetailsMessages(clientID);
 			}
 			
 			// Case where server receives a DETAILS-FOR message
-			// Received Message Format: (dsfr,remoteId,localId,x,y,z)
+			// Received Message Format: (dsfr,remoteId,localId,x,y,z,model)
 			if(messageTokens[0].compareTo("dsfr") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				UUID remoteID = UUID.fromString(messageTokens[2]);
 				String[] pos = {messageTokens[3], messageTokens[4], messageTokens[5]};
-				sendDetailsForMessage(clientID, remoteID, pos);
+				String model = messageTokens[6];
+				sendDetailsForMessage(clientID, remoteID, pos, model);
 			}
 			
 			// Case where server receives a MOVE message
@@ -135,14 +137,15 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 	 * server. This message also triggers WANTS_DETAILS messages to be sent to all client 
 	 * connected to the server. 
 	 * <p>
-	 * Message Format: (create,remoteId,x,y,z) where x, y, and z represent the position
+	 * Message Format: (create,remoteId,x,y,z,model) where x, y, and z represent the position
 	 */
-	public void sendCreateMessages(UUID clientID, String[] position)
+	public void sendCreateMessages(UUID clientID, String[] position, String model)
 	{	try 
 		{	String message = new String("create," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + model;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 
@@ -156,14 +159,15 @@ public class GameServerTCP extends GameConnectionServer<UUID>
 	 * messages localId becomes the remoteId for this message, and the remote clients messages 
 	 * remoteId is used to send this message to the proper client. 
 	 * <p>
-	 * Message Format: (dsfr,remoteId,x,y,z) where x, y, and z represent the position.
+	 * Message Format: (dsfr,remoteId,x,y,z,model) where x, y, and z represent the position.
 	 */
-	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position)
+	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String model)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + model;
 			sendPacket(message, clientID);
 		} 
 		catch (IOException e) 

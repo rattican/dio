@@ -71,13 +71,13 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[4]));
 				modelName = messageTokens[5];
 			} else {
-				// Format: dsfr, remoteID, localID, x, y, z, model
-				ghostID = UUID.fromString(messageTokens[2]); // localID of the sender
+				// Format: dsfr, remoteId, x, y, z, model
+				ghostID = UUID.fromString(messageTokens[1]);
 				ghostPos = new Vector3f(
+					Float.parseFloat(messageTokens[2]),
 					Float.parseFloat(messageTokens[3]),
-					Float.parseFloat(messageTokens[4]),
-					Float.parseFloat(messageTokens[5]));
-				modelName = messageTokens[6];
+					Float.parseFloat(messageTokens[4]));
+				modelName = messageTokens[5];
 			}
 
 			try {

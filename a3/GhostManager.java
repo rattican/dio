@@ -40,7 +40,7 @@ public class GhostManager
 		
 		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
 		newAvatar.getRenderStates().setRenderHiddenFaces(true);
-		Matrix4f initialScale = (new Matrix4f()).scaling(0.25f);		
+		Matrix4f initialScale = (new Matrix4f()).scaling(scale);		
 		newAvatar.setLocalScale(initialScale);
 		ghostAvatars.add(newAvatar);
 	}
