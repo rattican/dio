@@ -32,8 +32,8 @@ public class GhostManager
         	t = game.getGhostTexture();
         	scale = 0.55f;
     	} else {
-        	s = game.getDolphinShape(); // Dolphin
-        	t = game.getDolphinTexture();
+        	s = game.getDioShape(); // DIO
+        	t = game.getDioTexture();
         	scale = 3.0f;
     	}
 		// Apply Y offset based on model type
