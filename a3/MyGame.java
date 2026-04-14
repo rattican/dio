@@ -531,7 +531,8 @@ public class MyGame extends VariableFrameRateGame
 		// update altitude of DIO based on height map
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
-		dio.setLocalLocation(new Vector3f(loc.x(), height, loc.z()));
+		float offset = 0.5f;
+		dio.setLocalLocation(new Vector3f(loc.x(), height + offset, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
