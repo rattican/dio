@@ -229,7 +229,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	
-		dioS = new ImportedModel("dolphinHighPoly.obj");
+		dioS = new ImportedModel("dio.obj");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -245,7 +245,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	dioTx = new TextureImage("Dolphin_HighPolyUV.jpg");
+	{	dioTx = new TextureImage("dio_uv.png");
 		pyrTx1 = new TextureImage("sand_brick.jpg");
 		pyrTx2 = new TextureImage("blue_brick.jpg");
 		pyrTx3 = new TextureImage("rocky_brick.jpg");
@@ -289,9 +289,9 @@ public class MyGame extends VariableFrameRateGame
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
 		}
-		dol.setLocalTranslation(initialTranslation);
-		dol.setLocalScale(initialScale);
-		dol.setLocalRotation(initialRotation);
+		dio.setLocalTranslation(initialTranslation);
+		dio.setLocalScale(initialScale);
+		dio.setLocalRotation(initialRotation);
 
 		terrain = new GameObject(GameObject.root(), terrainS, grassTx);
 		terrain.setLocalLocation(new Vector3f(0f,0f,0f));
@@ -536,7 +536,7 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
-		dol.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
+		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
