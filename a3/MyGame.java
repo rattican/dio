@@ -264,7 +264,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale, initialRotation;
-		float avatarStartY = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
+		float avatarStartY = myType.equalsIgnoreCase("miku") ? 8.0f : 3.0f;
 		initialTranslation = (new Matrix4f()).translation(2, avatarStartY, 0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
@@ -530,7 +530,8 @@ public class MyGame extends VariableFrameRateGame
 		// update altitude of dolphin based on height map
 		Vector3f loc = dol.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
-		dol.setLocalLocation(new Vector3f(loc.x(), height + 0.5f, loc.z()));
+		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
+		dol.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
