@@ -261,7 +261,8 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale, initialRotation;
-		initialTranslation = (new Matrix4f()).translation(2,1,0);
+		float avatarStartY = myType.equalsIgnoreCase("miku") ? 8.0f : 3.0f;
+		initialTranslation = (new Matrix4f()).translation(2, avatarStartY, 0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 
@@ -288,7 +289,10 @@ public class MyGame extends VariableFrameRateGame
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
 		}
-		
+		dol.setLocalTranslation(initialTranslation);
+		dol.setLocalScale(initialScale);
+		dol.setLocalRotation(initialRotation);
+
 		terrain = new GameObject(GameObject.root(), terrainS, grassTx);
 		terrain.setLocalLocation(new Vector3f(0f,0f,0f));
 		terrain.setLocalScale(new Matrix4f().scaling(20f,1f,20f));
@@ -531,8 +535,8 @@ public class MyGame extends VariableFrameRateGame
 		// update altitude of DIO based on height map
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
-		float offset = 0.5f;
-		dio.setLocalLocation(new Vector3f(loc.x(), height + offset, loc.z()));
+		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
+		dol.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
