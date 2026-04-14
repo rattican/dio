@@ -57,7 +57,7 @@ public class MyGame extends VariableFrameRateGame
 
 	// track elapsed time for HUD
 	private double lastFrameTime, currFrameTime, elapsTime;
-	private static final float DOLPHIN_SPEED = 1f;	// for fwd/backward time-based movement
+	private static final float MOVE_SPEED = 1f;	// for fwd/backward time-based movement
 
 	// node controller
 	private NodeController sc1, sc2, sc3, pulse;
@@ -72,16 +72,16 @@ public class MyGame extends VariableFrameRateGame
 	private static final float COLLISION_DIST = 4f;
 	private static final float PHOTO_DIST = 10.5f;
 	private static final float HOME_DIST = 9f;
-	private Vector3f spawnpoint; // dolphin's home
+	private Vector3f spawnpoint;
 
 	// HUD messages
 	private String hudMsg = "GAME START! Take photos of the pyramids!";
 
 	// input manager and game object related stuff
 	private InputManager im;
-	private GameObject dol, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain;
-	private ObjShape dolS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS;;
-	private TextureImage doltx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
+	private GameObject dio, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain;
+	private ObjShape dioS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS;
+	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
 	private Light light1, light2, light3, light4;
 
 	private CameraOrbit3D orbit;
@@ -102,27 +102,26 @@ public class MyGame extends VariableFrameRateGame
 		}
 
 	public static void main(String[] args)
-	{	
+{	
 		System.setProperty("jogl.disable.opengl.core", "true");
 		if (args.length < 4) {
-        	System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol> <Role>");
-    }
-    else {
-        MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2], args[3]);
-        engine = new Engine(game);
-        engine.initializeSystem();
-        game.buildGame();
-        game.startGame();
-    }
-
+			System.out.println("Usage: java a3.MyGame <IP> <Port> <Protocol> <Role>");
+		}
+		else {
+			MyGame game = new MyGame(args[0], Integer.parseInt(args[1]), args[2], args[3]);
+			engine = new Engine(game);
+			engine.initializeSystem();
+			game.buildGame();
+			game.startGame();
+		}
 	}
 
 	// getters
-	public GameObject getAvatar() { return dol; }
-	public Vector3f getPlayerPosition() { return dol.getWorldLocation(); }
+	public GameObject getAvatar() { return dio; }
+	public Vector3f getPlayerPosition() { return dio.getWorldLocation(); }
 	public float getPlayerYaw() { 
 		// Extract yaw from the rotation matrix
-		Matrix4f rotMatrix = dol.getWorldRotation();
+		Matrix4f rotMatrix = dio.getWorldRotation();
 		// For a Y-axis rotation, the yaw can be extracted from the rotation matrix
 		// Using atan2 of elements affected by Y rotation
 		float m00 = rotMatrix.m00();
@@ -134,16 +133,15 @@ public class MyGame extends VariableFrameRateGame
 	//from code07a2
 	//public GameObject getAvatar() { return avatar; }
 	public ObjShape getGhostShape() { return ghostS; }
-	//public ObjShape getGhostShape() { return dolS; }
+	//public ObjShape getGhostShape() { return dioS; }
 	public TextureImage getGhostTexture() { return ghostT; }
 	public GhostManager getGhostManager() { return gm; }
-	public ObjShape getDolphinShape() { return dolS; }
+	public ObjShape getDioShape() { return dioS; }
 
-	public TextureImage getDolphinTexture() { return doltx; }
+	public TextureImage getDioTexture() { return dioTx; }
 	public Engine getEngine() {return engine;}
 	public void setIsConnected(boolean v) { isConnected = v; }
-	public String getAvatarType() { return myType; }// Returns "dolphin" or "miku" based on bat}
-	//set up networking
+	public String getAvatarType() { return myType; }// Returns "dio" or "miku" based on bat}
 	private void setupNetworking() {
     	isClientConnected = false;
     	gm = new GhostManager(this); // Initialize manager for other players 
@@ -160,16 +158,15 @@ public class MyGame extends VariableFrameRateGame
     	}
 	}
 
-
 	// check collisions; call in update()
 	private void checkCollisions() {
 		if (gameOver || gameWon) {return;}
 
-		// track dolphin location and store distances between dolphin and pyramids
-		Vector3f dolphinLocation = dol.getWorldLocation();
-		float dist1 = dolphinLocation.distance(pyr1.getWorldLocation());
-		float dist2 = dolphinLocation.distance(pyr2.getWorldLocation());
-		float dist3 = dolphinLocation.distance(pyr3.getWorldLocation());
+		// track Dio's location and store distances between Dio and pyramids
+		Vector3f dioLocation = dio.getWorldLocation();
+		float dist1 = dioLocation.distance(pyr1.getWorldLocation());
+		float dist2 = dioLocation.distance(pyr2.getWorldLocation());
+		float dist3 = dioLocation.distance(pyr3.getWorldLocation());
 
 		// compare distances for collision
 		if (dist1 < COLLISION_DIST || dist2 < COLLISION_DIST || dist3 < COLLISION_DIST) {
@@ -185,22 +182,22 @@ public class MyGame extends VariableFrameRateGame
 		else hudMsg = "Visit pyramids to take photos";
 
 		// check distance to home for win condition
-		float homeDist = dolphinLocation.distance(spawnpoint);
-		if (homeDist < HOME_DIST && picturesTaken == 3){hudMsg = "Press SPACE to get off the dolphin and WIN!";}
+		float homeDist = dioLocation.distance(spawnpoint);
+		if (homeDist < HOME_DIST && picturesTaken == 3){hudMsg = "Press SPACE to get off DIO and WIN!";}
 		else if (homeDist < HOME_DIST) {hudMsg = "Welcome home! Take photos of all the pyramids to win!";}
 	}
 
-	// resets dolphin back at the house if crashed
-	private void resetDolphin() {
-		dol.setLocalLocation(spawnpoint);
-		dol.setLocalRotation(new Matrix4f().rotationY((float)java.lang.Math.toRadians(135.0f)));
+	// resets Dio back at the house if crashed
+	private void resetDio() {
+		dio.setLocalLocation(spawnpoint);
+		dio.setLocalRotation(new Matrix4f().rotationY((float)java.lang.Math.toRadians(135.0f)));
 		gameOver = false;
-		hudMsg = "Dolphin reset! Try again!";
+		hudMsg = "DIO reset! Try again!";
 	}
 
-	// create photo and attachments to dolphin
+	// create photo and attachments to DIO
 	private void attachPhoto(TextureImage photoTx, int pyramidIdx) {
-		photo = new GameObject(dol, photoS, photoTx);
+		photo = new GameObject(dio, photoS, photoTx);
 
 		float offset = 0.5f + (picturesTaken * 0.5f);
 		photo.setLocalLocation(new Vector3f(-2.0f, offset, -0.5f));
@@ -211,7 +208,7 @@ public class MyGame extends VariableFrameRateGame
 		photosTexture.add(photoTx);
 	}
 
-	// display all photos onto dolphin home's wall
+	// display all photos onto DIO home's wall
 	private void displayPhotos(){
 		// positions for wall
 		float startX = -15f;
@@ -232,9 +229,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	
-		dolS = new ImportedModel("dolphinHighPoly.obj");
+		dioS = new ImportedModel("dolphinHighPoly.obj");
 		pyrS = new Pyramid();
-		homeS = new DolphinHouse();
+		homeS = new DioHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
 		yS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,3f,0f));
 		zS = new Line(new Vector3f(0f,0f,0f), new Vector3f(0f,0f,-3f));
@@ -248,7 +245,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	doltx = new TextureImage("Dolphin_HighPolyUV.jpg");
+	{	dioTx = new TextureImage("Dolphin_HighPolyUV.jpg");
 		pyrTx1 = new TextureImage("sand_brick.jpg");
 		pyrTx2 = new TextureImage("blue_brick.jpg");
 		pyrTx3 = new TextureImage("rocky_brick.jpg");
@@ -286,10 +283,10 @@ public class MyGame extends VariableFrameRateGame
 
 		// build local avatar in the center of the window
 		if (myType.equalsIgnoreCase("miku")) {
-			dol = new GameObject(GameObject.root(), ghostS, ghostT);
+			dio = new GameObject(GameObject.root(), ghostS, ghostT);
 			initialScale = (new Matrix4f()).scaling(0.55f);
 		} else {
-			dol = new GameObject(GameObject.root(), dolS, doltx);
+			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
 		}
 		dol.setLocalTranslation(initialTranslation);
@@ -303,6 +300,12 @@ public class MyGame extends VariableFrameRateGame
 		// set tiling for terrain textures
 		terrain.getRenderStates().setTiling(1);
 		terrain.getRenderStates().setTileFactor(10);
+
+		// build DIO in the center of the window
+		dio = new GameObject(GameObject.root(), dioS, dioTx);
+		dio.setLocalTranslation(initialTranslation);
+		dio.setLocalScale(initialScale);
+		dio.setLocalRotation(initialRotation);
 
 		// build home floating above spawnpoint
 		home = new GameObject(GameObject.root(), homeS, brick);
@@ -407,15 +410,15 @@ public class MyGame extends VariableFrameRateGame
 		vp2.setCamera(cam2);
 
 		// create cam orbit 3d
-		orbit = new CameraOrbit3D(engine, dol);
-		orbit.addTarget(dol);
+		orbit = new CameraOrbit3D(engine, dio);
+		orbit.addTarget(dio);
 		engine.getSceneGraph().addNodeController(orbit);
 		orbit.enable();
 
 		// set main cam position
 		Camera mainCam = engine.getRenderSystem().getViewport("MAIN").getCamera();
 		mainCam.setLocation(new Vector3f(0,5,15));
-		mainCam.lookAt(dol.getWorldLocation());
+		mainCam.lookAt(dio.getWorldLocation());
 
 		setupNetworking();
 
@@ -459,7 +462,7 @@ public class MyGame extends VariableFrameRateGame
 			net.java.games.input.Component.Identifier.Key.S, backAction,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		
-			// bind input actions for cam orbit 3d
+		// bind input actions for cam orbit 3d
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.LEFT, (evt, val) -> orbit.orbitLeft(-1f), InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(
@@ -473,7 +476,7 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.X, (evt, val) -> orbit.zoomOut(0.2f), InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		
-			// overhead zoom and pan input bindings
+		// overhead zoom and pan input bindings
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.I, panUp,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -493,10 +496,12 @@ public class MyGame extends VariableFrameRateGame
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
+
 	protected void processNetworking(float elapsTime) {
     	if (protClient != null)
         	protClient.processPackets();
 		}
+
 	@Override
 	public void update()
 	{	// updates elapsed time
@@ -518,7 +523,7 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(0,1,0);
 		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color, 15, 15);
-		(engine.getHUDmanager()).setHUD2("Avatar: " + dol.getWorldLocation().toString(), hud2Color, 1350, 720);
+		(engine.getHUDmanager()).setHUD2("Avatar: " + dio.getWorldLocation().toString(), hud2Color, 1350, 720);
 
 		// update skybox with camera
 		Vector3f camLoc = engine.getRenderSystem()
@@ -527,14 +532,16 @@ public class MyGame extends VariableFrameRateGame
                         .getLocation();
 		sky.setLocalLocation(camLoc);
 
-		// update altitude of dolphin based on height map
-		Vector3f loc = dol.getWorldLocation();
+		// update altitude of DIO based on height map
+		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
 		dol.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update inputs and camera according to game conditions
 		if (!gameOver || gameWon) im.update((float)elapsTime);
+
+		// process networking packets
 		processNetworking((float)elapsTime);
 	}
 
@@ -560,9 +567,9 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 			case KeyEvent.VK_SPACE:	// win/lose condition
-				if (gameOver) { resetDolphin(); break; }
+				if (gameOver) { resetDio(); break; }
 
-				float homeDist = dol.getWorldLocation().distance(spawnpoint);
+				float homeDist = dio.getWorldLocation().distance(spawnpoint);
 				// win condition
 				if (!gameWon && homeDist < HOME_DIST && picturesTaken == 3){
 					gameWon = true;
@@ -572,14 +579,14 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 			case KeyEvent.VK_R: // reset game
-				resetDolphin();
+				resetDio();
 				break;
 			case KeyEvent.VK_P:	// take picture (rectangle texture) if close enough
 				if (!gameOver && !gameWon) {
-					Vector3f dolLoc = dol.getWorldLocation();
-					float dist1 = dolLoc.distance(pyr1.getWorldLocation());
-					float dist2 = dolLoc.distance(pyr2.getWorldLocation());
-					float dist3 = dolLoc.distance(pyr3.getWorldLocation());
+					Vector3f dioLoc = dio.getWorldLocation();
+					float dist1 = dioLoc.distance(pyr1.getWorldLocation());
+					float dist2 = dioLoc.distance(pyr2.getWorldLocation());
+					float dist3 = dioLoc.distance(pyr3.getWorldLocation());
 
 					if (dist1 < PHOTO_DIST && !pyramidPhotos[0]) {
 						pyramidPhotos[0] = true;
@@ -624,16 +631,16 @@ public class MyGame extends VariableFrameRateGame
 	
 	// Method to handle avatar rotation and send update to server
 	public void rotateAvatarAndSendUpdate(float yawDelta)
-	{	dol.globalYaw(yawDelta);
+	{	dio.globalYaw(yawDelta);
 		if (protClient != null)
-		{	protClient.sendMoveMessage(dol.getWorldLocation());
+		{	protClient.sendMoveMessage(dio.getWorldLocation());
 		}
 	}
 	
 	// Method to send network movement update
 	public void sendNetworkMovementUpdate()
 	{	if (protClient != null)
-		{	protClient.sendMoveMessage(dol.getWorldLocation());
+		{	protClient.sendMoveMessage(dio.getWorldLocation());
 		}
 	}
 }
