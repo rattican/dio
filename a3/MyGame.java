@@ -287,7 +287,7 @@ public class MyGame extends VariableFrameRateGame
 			initialScale = (new Matrix4f()).scaling(0.55f);
 		} else {
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
-			initialScale = (new Matrix4f()).scaling(3.0f);
+			initialScale = (new Matrix4f()).scaling(1.5f);
 		}
 		dio.setLocalTranslation(initialTranslation);
 		dio.setLocalScale(initialScale);
