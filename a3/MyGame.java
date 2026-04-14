@@ -292,7 +292,10 @@ public class MyGame extends VariableFrameRateGame
 			dol = new GameObject(GameObject.root(), dolS, doltx);
 			initialScale = (new Matrix4f()).scaling(3.0f);
 		}
-		
+		dol.setLocalTranslation(initialTranslation);
+		dol.setLocalScale(initialScale);
+		dol.setLocalRotation(initialRotation);
+
 		terrain = new GameObject(GameObject.root(), terrainS, grassTx);
 		terrain.setLocalLocation(new Vector3f(0f,0f,0f));
 		terrain.setLocalScale(new Matrix4f().scaling(20f,1f,20f));
@@ -300,12 +303,6 @@ public class MyGame extends VariableFrameRateGame
 		// set tiling for terrain textures
 		terrain.getRenderStates().setTiling(1);
 		terrain.getRenderStates().setTileFactor(10);
-
-		// build dolphin in the center of the window
-		dol = new GameObject(GameObject.root(), dolS, doltx);
-		dol.setLocalTranslation(initialTranslation);
-		dol.setLocalScale(initialScale);
-		dol.setLocalRotation(initialRotation);
 
 		// build home floating above spawnpoint
 		home = new GameObject(GameObject.root(), homeS, brick);
