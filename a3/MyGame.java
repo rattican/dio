@@ -249,7 +249,8 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale, initialRotation;
-		initialTranslation = (new Matrix4f()).translation(2,1,0);
+		float avatarStartY = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
+		initialTranslation = (new Matrix4f()).translation(2, avatarStartY, 0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 
