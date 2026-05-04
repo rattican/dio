@@ -23,6 +23,9 @@ import java.net.UnknownHostException;
 
 import a3.MyGame;
 import org.joml.Matrix4f;
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
+import tage.rml.Quaternionf;
 
 /*
 	Milestone 1: Networking, SkyBox, Terrain, UV Unwrapped Models (2)
@@ -55,6 +58,10 @@ public class MyGame extends VariableFrameRateGame
 	private boolean gameWon = false;
 	private boolean axesVisible = true;
 
+	// player state
+	private boolean walking = false;
+	private float vals[] = new float[16];
+
 	// track elapsed time for HUD
 	private double lastFrameTime, currFrameTime, elapsTime;
 	private static final float MOVE_SPEED = 1f;	// for fwd/backward time-based movement
@@ -84,6 +91,11 @@ public class MyGame extends VariableFrameRateGame
 	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
 	private Light light1, light2, light3, light4;
 
+	// physics related
+	private PhysicsEngine physicsEngine;
+	private PhysicsObject physicsObj1, physicsObj2, physicsPlane;
+
+	// camera orbit
 	private CameraOrbit3D orbit;
 
 	//for networking:
@@ -277,9 +289,11 @@ public class MyGame extends VariableFrameRateGame
 		sky.getRenderStates().hasLighting(false);
 
 		ground = new GameObject(GameObject.root(), groundS, groundTx);
-		ground.setLocalScale(new Matrix4f().scaling(20f, 1f, 20f));
-		// ground.setLocalScale(new Matrix4f().scaling(200f));
+		ground.setLocalScale(new Matrix4f().scaling(10f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
+		ground.getRenderStates().setTiling(1);
+		ground.getRenderStates().setTileFactor(4);
+		ground.getRenderStates().hasLighting(true);
 
 		// build local avatar in the center of the window
 		if (myType.equalsIgnoreCase("miku")) {
@@ -497,6 +511,52 @@ public class MyGame extends VariableFrameRateGame
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
 
+	@Override
+	public void initializePhysicsObjects(){
+		float[] gravity = {0f,-5f,0f};
+		physicsEngine = engine.getSceneGraph().getPhysicsEngine();
+		physicsEngine.setGravity(gravity);
+
+		// create physics world
+		float mass = 1.0f;
+		float up[] = {0f,1f,0f};
+		float radius = 0.75f;
+		float height = 2.0f;
+		Vector3f loc;
+		Quaternionf rot;
+
+		// creates physics obj for DIO
+		loc = dio.getWorldLocation();
+		rot = new Quaternionf();
+		(dio.getWorldLocation()).getNormalizedRotation(rot);
+		physicsObj1 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
+		physicsObj1.setBounciness(0.8f);
+		physicsObj1.disableSleeping();
+		dio.setPhysicsObject(physicsObj1);
+
+		/*
+		// for MIKU
+		loc = miku.getWorldLocation();
+		rot = new Quaternionf();
+		(miku.getWorldLocation()).getNormalizedRotation(rot);
+		physicsObj2 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
+		physicsObj2.setBounciness(0.8f);
+		physicsObj2.disableSleeping();
+		miku.setPhysicsObject(physicsObj2);
+		*/
+
+		loc = ground.getWorldLocation();
+		rot = new Quaternionf();
+		(ground.getWorldLocation()).getNormalizedRotation(rot);
+		physicsPlane = (engine.getSceneGraph()).addPhysicsStaticPlane(loc, rot, up, 0f);
+		physicsPlane.setBounciness(1f);
+		ground.setPhysicsObject(physicsPlane);
+
+		// visualizes physics world
+		engine.enableGraphicsWorldRender();
+		engine.enablePhysicsWorldRender();
+	}
+
 	protected void processNetworking(float elapsTime) {
     	if (protClient != null)
         	protClient.processPackets();
@@ -512,13 +572,16 @@ public class MyGame extends VariableFrameRateGame
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
 		//checking if packets received by the client from the server
+
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
 		String scoreStr = Integer.toString(picturesTaken);
+
 		// strings
 		String dispStr1 = "Time = " + elapsTimeStr + " : Photos Taken = " + scoreStr;
 		String dispStr2 = hudMsg;
+
 		// colors and positions
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(0,1,0);
@@ -538,8 +601,30 @@ public class MyGame extends VariableFrameRateGame
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
 		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
+		// update physics
+		if (walking) {
+			physicsEngine.update((float)elapsTime/1000.0f);
+			for (GameObject go : engine.getSceneGraph().getGameObjects()){
+				if (go.getPhysicsObject() != null) {
+					Vector3f newLoc = go.getPhysicsObject().getLocation();
+					Matrix4f locMat = new Matrix4f();
+					locMat.set(3,0,loc.x());
+					locMat.set(3,1,loc.y());
+					locMat.set(3,2,loc.z());
+					go.setLocalLocation(newLoc);
+				}
+				// set rotations
+				Quarternion rot = go.getPhysicsObject().getRotation();
+				Matrix4f rotMat = new Matrix4f();
+				rot.get(rotMat);
+				go.setLocalRotation(rotMat);
+			}
+		}
+
 		// update inputs and camera according to game conditions
-		if (!gameOver || gameWon) im.update((float)elapsTime);
+		if (!gameOver || gameWon) {
+			walking = true;
+			im.update((float)elapsTime);}
 
 		// process networking packets
 		processNetworking((float)elapsTime);
