@@ -25,16 +25,17 @@ import a3.MyGame;
 import org.joml.Matrix4f;
 
 /*
-	Milestone 1: Networking, SkyBox, Terrain, UV Unwrapped Models (2)
+	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
 	
-	Haley's TO DO:
-	xxxx
+	Haley's TO DO: Miku animation, NPC/AI
+	
+	Emily's TO DO: Physics, Sound, DIO animation, fixes from Milestone 1
 
-	Emily's TO DO:
+	Low-priority Task:
+	Update dolphin reference in run_dio.bat later
 	Modify second camera so skybox is not visible in overhead view
 	Add terrain features in distance
-	Replace main dolphin model with the UV unwrapped cat model from Blender
-	**Rewrite pyramid game to 2.5D neighborhood combat game
+	
 */
 
 public class MyGame extends VariableFrameRateGame
