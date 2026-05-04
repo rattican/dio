@@ -23,6 +23,7 @@ import java.net.UnknownHostException;
 
 import a3.MyGame;
 import org.joml.Matrix4f;
+import tage.audio.*;
 
 /*
 	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
@@ -49,6 +50,10 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isClientConnected = false;
 	private boolean isConnected = false;
 	private static Engine engine;
+
+	// audio and background/sound effects
+	private IAudioManager audioMgr;
+	private Sound bgMusic, attackSfx, dieSfx, winSfx;
 
 	// game state stuff
 	private boolean paused = false;
@@ -242,6 +247,28 @@ public class MyGame extends VariableFrameRateGame
 		logoS = new Plane();
 		ghostS = new ImportedModel("miku.obj");
 		terrainS = new TerrainPlane(128);
+	}
+
+	@Override
+	public void loadSounds() {
+		AudioResource rsrc1, rsrc2;
+		audioMgr = engine.getAudioManager();
+
+		// background music
+		rsrc1 = audioMgr.createAudioResource("bgMusic.mp3", AudioResourceType.AUDIO_SAMPLE);
+		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 55, true);
+		bgMusic.initialize(audioMgr);
+		bgMusic.setMaxDistance(10.0f);
+		bgMusic.setMinDistance(0.5f);
+		bgMusic.setRollOff(5.0f);
+
+		// attack sound effect when player hits enemy
+		rsrc2 = audioMgr.createAudioResource("attackSfx.mp3", AudioResourceType.AUDIO_SAMPLE);
+		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 75, false);
+		attackSfx.initialize(audioMgr);
+		attackSfx.setMaxDistance(10.0f);
+		attackSfx.setMinDistance(0.5f);
+		attackSfx.setRollOff(5.0f);
 	}
 
 	@Override
@@ -496,6 +523,18 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+
+		// init sound settings
+		bgMusic.setLocation(dio.getWorldLocation());
+		attackSfx.setLocation(dio.getWorldLocation());
+		setEarParameters();
+		bgMusic.play();
+	}
+
+	public void setEarParameters() {
+		Camera cam = engine.getRenderSystem().getViewport("MAIN").getCamera();
+		audioMgr.getEar().setLocation(dio.getWorldLocation());
+		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0f, 1f, 0f));
 	}
 
 	protected void processNetworking(float elapsTime) {
@@ -544,6 +583,11 @@ public class MyGame extends VariableFrameRateGame
 
 		// process networking packets
 		processNetworking((float)elapsTime);
+
+		// update sound
+		bgMusic.setLocation(dio.getWorldLocation());
+		attackSfx.setLocation(dio.getWorldLocation());
+		setEarParameters();
 	}
 
 	@Override
