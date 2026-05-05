@@ -75,18 +75,19 @@ public class GhostManager
 		}		
 		return null;
 	}
-	public void updateGhostAvatar(UUID id, Vector3f position, float yaw, float scale)
-	{	
-		GhostAvatar ghost = findAvatar(id);
-    	if (ghost != null) {
-        	// RKA: Translation/Location
-        	ghost.setLocalLocation(position);
-        
-        	// RKM: Rotation (Matrix from Yaw)
-			Matrix4f rot = new Matrix4f().rotationY((float)java.lang.Math.toRadians(yaw));
-        
-        	// RKS: Scaling
-        	ghost.setLocalScale(new Matrix4f().scaling(scale));
-    	}
-	}	
+	public void updateGhostAvatar(UUID id, Vector3f position, float yaw)
+	{	GhostAvatar ghostAvatar = findAvatar(id);
+		if (ghostAvatar != null)
+		{	
+			float yOffset = getYOffsetForModel(ghostAvatar.getModelName());
+			Vector3f adjustedPosition = new Vector3f(position.x(), position.y() + yOffset, position.z());
+        	ghostAvatar.setPosition(adjustedPosition);
+        	// Update rotation based on yaw
+        	Matrix4f rotation = new Matrix4f().rotationY((float)java.lang.Math.toRadians(yaw));
+        	ghostAvatar.setLocalRotation(rotation);
+		}
+		else
+		{	System.out.println("tried to update ghost avatar position, but unable to find ghost in list");
+		}
+	}
 }

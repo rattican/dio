@@ -129,21 +129,13 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[2]),
 					Float.parseFloat(messageTokens[3]),
 					Float.parseFloat(messageTokens[4]));
-
-				float ghostYaw = Float.parseFloat(messageTokens[5]); // RKM
-    			float ghostScale = Float.parseFloat(messageTokens[6]); // RKS
 				
 				float yaw = 135.0f; // default yaw
-					float scale = 1.5f; // default scale
-					if (messageTokens.length > 5) {
-						// New format includes yaw
-						yaw = Float.parseFloat(messageTokens[5]);
-					}
-					if (messageTokens.length > 6) {
-						// New format includes scale
-						scale = Float.parseFloat(messageTokens[6]);
-					}
-					ghostManager.updateGhostAvatar(ghostID, ghostPosition, yaw, scale);
+				if (messageTokens.length > 5) {
+					// New format includes yaw
+					yaw = Float.parseFloat(messageTokens[5]);
+				}
+				ghostManager.updateGhostAvatar(ghostID, ghostPosition, yaw);
 	}	}	}
 	
 	// The initial message from the game client requesting to join the 
@@ -211,11 +203,9 @@ public class ProtocolClient extends GameConnectionClient
 			message += "," + position.y();
 			message += "," + position.z();
 			message += "," + game.getPlayerYaw();
-			message += "," + (game.getAvatarType().equalsIgnoreCase("miku") ? 0.55f : 1.5f); // RKS (Scale)
+			
 			sendPacket(message);
 		} catch (IOException e) 
 		{	e.printStackTrace();
-		}	
-	}
-
+	}	}
 }

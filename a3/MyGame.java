@@ -28,7 +28,7 @@ import tage.physics.PhysicsEngine;
 import tage.physics.PhysicsObject;
 import tage.rml.Quaternionf;
 import tage.audio.*;
-
+ 
 /*
 	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
 	
@@ -107,10 +107,6 @@ public class MyGame extends VariableFrameRateGame
 
 	//for networking:
 	private String myType; // to make sure which character is it
-
-	//NEW for animation:
-	private boolean isMoving;
-
 
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
@@ -262,9 +258,7 @@ public class MyGame extends VariableFrameRateGame
 		groundS = new Plane();
 		skyS = new Sphere();
 		logoS = new Plane();
-		ghostS = new AnimatedShape("miku.rkm", "miku.rks");
-		((AnimatedShape)ghostS).loadAnimation("WALK", "walk_miku.rka");
-	
+		ghostS = new ImportedModel("miku.obj");
 		terrainS = new TerrainPlane(128);
 	}
 
@@ -310,7 +304,7 @@ public class MyGame extends VariableFrameRateGame
 	{	Matrix4f initialTranslation, initialScale, initialRotation;
 		float avatarStartY = myType.equalsIgnoreCase("miku") ? 8.0f : 3.0f;
 		initialTranslation = (new Matrix4f()).translation(2, avatarStartY, 0);
-		//initialScale = (new Matrix4f()).scaling(3.0f);
+		initialScale = (new Matrix4f()).scaling(3.0f);
 		initialRotation = (new Matrix4f()).rotationY((float)java.lang.Math.toRadians(135.0f));
 
 		logo = new GameObject(GameObject.root(), logoS, logoTx);
@@ -349,6 +343,12 @@ public class MyGame extends VariableFrameRateGame
 		// set tiling for terrain textures
 		terrain.getRenderStates().setTiling(1);
 		terrain.getRenderStates().setTileFactor(10);
+
+		// build DIO in the center of the window
+		dio = new GameObject(GameObject.root(), dioS, dioTx);
+		dio.setLocalTranslation(initialTranslation);
+		dio.setLocalScale(initialScale);
+		dio.setLocalRotation(initialRotation);
 
 		// build home floating above spawnpoint
 		home = new GameObject(GameObject.root(), homeS, brick);
@@ -602,8 +602,6 @@ public class MyGame extends VariableFrameRateGame
     	if (protClient != null)
         	protClient.processPackets();
 		}
-		
-	public void setIsMoving(boolean m) { isMoving = m; }
 
 	@Override
 	public void update()
@@ -614,21 +612,6 @@ public class MyGame extends VariableFrameRateGame
 
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
-		//---------ANIMATION LOGIC ------
-		if (dio.getShape() instanceof AnimatedShape) {
-        AnimatedShape as = (AnimatedShape) dio.getShape();
-        
-        	if (isMoving) {
-            	// Note: If 'EndCondition' still errors, 
-           	 	// check if it's AnimatedShape.EndCondition.LOOP (uppercase)
-				as.playAnimation("WALK", 0.5f, EndType.LOOP, 0);	
-			} else {
-            	as.stopAnimation();
-        	}
-        	as.updateAnimation();
-        // This MUST be called every frame for the character to move its limbs
-    	}
-		isMoving = false;
 		//checking if packets received by the client from the server
 
 		// build and set HUD
@@ -693,15 +676,6 @@ public class MyGame extends VariableFrameRateGame
 		setEarParameters();
 	}
 
-	//helper for RKS:
-	public float getPlayerScale() {
-        return myType.equalsIgnoreCase("miku") ? 0.55f : 1.5f;
-    }
-	public void sendNetworkMovementUpdate() {   
-        if (protClient != null) {   
-            protClient.sendMoveMessage(dio.getWorldLocation());
-        }
-    }
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	Vector3f loc, fwd, newLocation, camU, camV, camN;
@@ -781,8 +755,7 @@ public class MyGame extends VariableFrameRateGame
 	{	@Override
 		public void performAction(float time, net.java.games.input.Event evt) 
 		{	if(protClient != null && isClientConnected == true)
-			{	
-				protClient.sendByeMessage();
+			{	protClient.sendByeMessage();
 			}
 		}
 	}
@@ -791,6 +764,13 @@ public class MyGame extends VariableFrameRateGame
 	public void rotateAvatarAndSendUpdate(float yawDelta)
 	{	dio.globalYaw(yawDelta);
 		if (protClient != null)
+		{	protClient.sendMoveMessage(dio.getWorldLocation());
+		}
+	}
+	
+	// Method to send network movement update
+	public void sendNetworkMovementUpdate()
+	{	if (protClient != null)
 		{	protClient.sendMoveMessage(dio.getWorldLocation());
 		}
 	}

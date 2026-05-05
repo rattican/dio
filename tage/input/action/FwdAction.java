@@ -51,8 +51,7 @@ public class FwdAction extends AbstractInputAction
     	av.setLocalLocation(newPosition);
     // Send network update
     	game.sendNetworkMovementUpdate();
-		game.setIsMoving(true);
-	}
+		}
 }
 
 
