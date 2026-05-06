@@ -63,7 +63,7 @@ public class MyGame extends VariableFrameRateGame
 	private IAudioManager audioMgr;
 	private Sound bgMusic, attackSfx, dieSfx, winSfx;
 
-	// game state stuff
+	// game state
 	private boolean paused = false;
 	private boolean gameOver = false;
 	private boolean gameWon = false;
@@ -288,7 +288,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// background music
 		rsrc1 = audioMgr.createAudioResource("bgMusic.wav", AudioResourceType.AUDIO_SAMPLE);
-		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 55, true);
+		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 25, true);
 		bgMusic.initialize(audioMgr);
 		bgMusic.setMaxDistance(10.0f);
 		bgMusic.setMinDistance(0.5f);
@@ -296,7 +296,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// attack sound effect when player hits enemy
 		rsrc2 = audioMgr.createAudioResource("attackSfx.wav", AudioResourceType.AUDIO_SAMPLE);
-		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 75, false);
+		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 35, false);
 		attackSfx.initialize(audioMgr);
 		attackSfx.setMaxDistance(10.0f);
 		attackSfx.setMinDistance(0.5f);
@@ -574,7 +574,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializePhysicsObjects(){
-		float[] gravity = {0f,-5f,0f};
+		float[] gravity = {0f,-20f,0f};
 		physicsEngine = engine.getSceneGraph().getPhysicsEngine();
 		physicsEngine.setGravity(gravity);
 
@@ -594,6 +594,10 @@ public class MyGame extends VariableFrameRateGame
 		physicsObj1.setBounciness(0.8f);
 		physicsObj1.disableSleeping();
 		dio.setPhysicsObject(physicsObj1);
+		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
+		physicsObj1.setDamping(0.8f,0.8f); // prevents sliding
+		physicsObj1.setFriction(1.0f); // also to prevent movement
+
 
 		/*
 		// for MIKU
@@ -612,10 +616,6 @@ public class MyGame extends VariableFrameRateGame
 		physicsPlane = (engine.getSceneGraph()).addPhysicsStaticPlane(loc, rot, up, 0f);
 		physicsPlane.setBounciness(1f);
 		ground.setPhysicsObject(physicsPlane);
-
-		// visualizes physics world
-		engine.enableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
 	}
 
 	protected void processNetworking(float elapsTime) {
@@ -642,7 +642,6 @@ public class MyGame extends VariableFrameRateGame
 				// converts back to matrix and sets rotation
 				quatInterp.get(matInterp);
 				dio.setLocalRotation(matInterp);
-				//sendNetworkMovementUpdate();
 			}
 		}
 
@@ -698,14 +697,6 @@ public class MyGame extends VariableFrameRateGame
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
 		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
-		// update inputs and camera according to game conditions
-		if (!gameOver || gameWon) {
-			walking = true;
-			im.update((float)elapsTime);}
-
-		// process networking packets
-		processNetworking((float)elapsTime);
-
 		// update sound
 		bgMusic.setLocation(dio.getWorldLocation());
 		attackSfx.setLocation(dio.getWorldLocation());
@@ -715,37 +706,30 @@ public class MyGame extends VariableFrameRateGame
 		if (walking) {
 			physicsEngine.update((float)elapsTime/1000.0f);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
-
-				PhysicsObject po = go.getPhysicsObject();
-				if (po == null) {continue;}
-
-				// update location
-				Vector3f newLoc = po.getLocation();
-				go.setLocalLocation(newLoc);
-
-				// sync rotation
-				Quaternionf rot = go.getPhysicsObject().getRotation();
-				Matrix4f rotMat = new Matrix4f();
-				rot.get(rotMat);
-				go.setLocalRotation(rotMat);
-
-				/* Original; using as reference do not delete
 				if (go.getPhysicsObject() != null) {
-					Vector3f newLoc = go.getPhysicsObject().getLocation();
+					// set translation
+					Vector3f poLoc = go.getPhysicsObject().getLocation();
 					Matrix4f locMat = new Matrix4f();
-					locMat.set(3,0,loc.x());
-					locMat.set(3,1,loc.y());
-					locMat.set(3,2,loc.z());
-					go.setLocalLocation(newLoc);
+					locMat.set(3,0,poLoc.x()); locMat.set(3,1,poLoc.y()); locMat.set(3,2,poLoc.z());
+					go.setLocalTranslation(locMat);
+
+					// set rotation
+					Quaternionf rot = go.getPhysicsObject().getRotation();
+					Matrix4f rotMat = new Matrix4f();
+					rot.get(rotMat);
+					go.setLocalRotation(rotMat);
 				}
-				// set rotations
-				Quaternionf rot = go.getPhysicsObject().getRotation();
-				Matrix4f rotMat = new Matrix4f();
-				rot.get(rotMat);
-				go.setLocalRotation(rotMat);
-				*/
 			}
 		}
+
+		// update inputs and camera according to game conditions
+		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
+		if (!gameOver || gameWon) {
+			walking = true;
+			im.update(frame);}
+
+		// process networking packets
+		processNetworking((float)elapsTime);
 	}
 
 	//helper for RKS:
@@ -757,25 +741,50 @@ public class MyGame extends VariableFrameRateGame
             protClient.sendMoveMessage(dio.getWorldLocation());
         }
     }
+	
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	Vector3f loc, fwd, newLocation, camU, camV, camN;
 		Matrix4f rot;
 		Camera cam = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 		switch (e.getKeyCode())
-		{	case KeyEvent.VK_1: // pause/unpause game
+		{	case KeyEvent.VK_TAB: // pause/unpause game
 				paused = !paused;
 				break;
-			case KeyEvent.VK_C: // show/hide axes
+			case KeyEvent.VK_1:
+				rotate = false;
+				dio.setLocalRotation(matStart);
+				break;
+			case KeyEvent.VK_2:
+				rotate = false;
+				dio.setLocalRotation(matEnd);
+				break;
+			case KeyEvent.VK_3:
+				dio.setLocalRotation(matStart);
+				interpolation = 0.0f;
+				rotate = true; lerp = true;
+				break;
+			case KeyEvent.VK_4:
+				dio.setLocalRotation(matStart);
+				interpolation = 0.0f;
+				rotate = true; lerp = false;
+				break;
+			case KeyEvent.VK_C: // toggle axes
 				axesVisible = !axesVisible;
 				if (axesVisible) {
         			x.setLocalScale(new Matrix4f().scaling(10f));
 					y.setLocalScale(new Matrix4f().scaling(10f));
 					z.setLocalScale(new Matrix4f().scaling(10f));
+					// visualizes physics world
+					//engine.enableGraphicsWorldRender();
+					engine.enablePhysicsWorldRender();
 				} else {
 					x.setLocalScale(new Matrix4f().scaling(0f));
 					y.setLocalScale(new Matrix4f().scaling(0f));
 					z.setLocalScale(new Matrix4f().scaling(0f));
+					// visualizes physics world
+					//engine.disableGraphicsWorldRender();
+					engine.disablePhysicsWorldRender();
 				}
 				break;
 			case KeyEvent.VK_SPACE:	// win/lose condition
