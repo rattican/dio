@@ -16,26 +16,35 @@ import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
 import tage.nodeControllers.*;
 import org.joml.Vector3f;
+import org.joml.Matrix4f;
 
 import tage.networking.IGameConnection.ProtocolType;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import a3.MyGame;
-import org.joml.Matrix4f;
 import tage.shapes.AnimatedShape.EndType;
+import tage.physics.PhysicsEngine;
+import tage.physics.PhysicsObject;
+import tage.audio.*;
+
+import org.joml.Quaternionf;
+import org.joml.Matrix4f;
+//import org.joml.Vector3f as JomlVector3f;
+
+import a3.MyGame;
 
 /*
-	Milestone 1: Networking, SkyBox, Terrain, UV Unwrapped Models (2)
+	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
 	
-	Haley's TO DO:
-	xxxx
+	Haley's TO DO: Miku animation, NPC/AI
+	
+	Emily's TO DO: Physics, Sound, DIO animation, fixes from Milestone 1
 
-	Emily's TO DO:
+	Low-priority Task:
+	Update dolphin reference in run_dio.bat later
 	Modify second camera so skybox is not visible in overhead view
 	Add terrain features in distance
-	Replace main dolphin model with the UV unwrapped cat model from Blender
-	**Rewrite pyramid game to 2.5D neighborhood combat game
+	
 */
 
 public class MyGame extends VariableFrameRateGame
@@ -50,11 +59,19 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isConnected = false;
 	private static Engine engine;
 
-	// game state stuff
+	// audio and background/sound effects
+	private IAudioManager audioMgr;
+	private Sound bgMusic, attackSfx, dieSfx, winSfx;
+
+	// game state
 	private boolean paused = false;
 	private boolean gameOver = false;
 	private boolean gameWon = false;
 	private boolean axesVisible = true;
+
+	// player state
+	private boolean walking = false;
+	private float vals[] = new float[16];
 
 	// track elapsed time for HUD
 	private double lastFrameTime, currFrameTime, elapsTime;
@@ -85,6 +102,21 @@ public class MyGame extends VariableFrameRateGame
 	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
 	private Light light1, light2, light3, light4;
 
+	// quaternion and matrix for physics
+	private boolean rotate = false, lerp = true;
+	private float interpolation = 0.0f, speed = 0.01f;
+	private Matrix4f matStart = new Matrix4f().identity();
+	private Matrix4f matInterp = new Matrix4f().identity();
+	private Matrix4f matEnd = new Matrix4f().identity();
+	private Quaternionf quatStart = new Quaternionf();
+	private Quaternionf quatInterp = new Quaternionf();
+	private Quaternionf quatEnd = new Quaternionf();
+
+	// physics related
+	private PhysicsEngine physicsEngine;
+	private PhysicsObject physicsObj1, physicsObj2, physicsPlane;
+
+	// camera orbit
 	private CameraOrbit3D orbit;
 	//dolphin NPC:
 	private ObjShape npcS;
@@ -94,9 +126,8 @@ public class MyGame extends VariableFrameRateGame
 	//for networking:
 	private String myType; // to make sure which character is it
 
-	//NEW for animation:
+	// for animation:
 	private boolean isMoving;
-
 
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
@@ -260,6 +291,28 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
+	public void loadSounds() {
+		AudioResource rsrc1, rsrc2;
+		audioMgr = engine.getAudioManager();
+
+		// background music
+		rsrc1 = audioMgr.createAudioResource("bgMusic.wav", AudioResourceType.AUDIO_SAMPLE);
+		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 25, true);
+		bgMusic.initialize(audioMgr);
+		bgMusic.setMaxDistance(10.0f);
+		bgMusic.setMinDistance(0.5f);
+		bgMusic.setRollOff(5.0f);
+
+		// attack sound effect when player hits enemy
+		rsrc2 = audioMgr.createAudioResource("attackSfx.wav", AudioResourceType.AUDIO_SAMPLE);
+		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 35, false);
+		attackSfx.initialize(audioMgr);
+		attackSfx.setMaxDistance(10.0f);
+		attackSfx.setMinDistance(0.5f);
+		attackSfx.setRollOff(5.0f);
+	}
+
+	@Override
 	public void loadTextures()
 	{	dioTx = new TextureImage("dio_uv.png");
 		pyrTx1 = new TextureImage("sand_brick.jpg");
@@ -294,9 +347,11 @@ public class MyGame extends VariableFrameRateGame
 		sky.getRenderStates().hasLighting(false);
 
 		ground = new GameObject(GameObject.root(), groundS, groundTx);
-		ground.setLocalScale(new Matrix4f().scaling(20f, 1f, 20f));
-		// ground.setLocalScale(new Matrix4f().scaling(200f));
+		ground.setLocalScale(new Matrix4f().scaling(10f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
+		ground.getRenderStates().setTiling(1);
+		ground.getRenderStates().setTileFactor(4);
+		ground.getRenderStates().hasLighting(true);
 
 		// build local avatar in the center of the window
 		if (myType.equalsIgnoreCase("miku")) {
@@ -506,6 +561,71 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+
+		// init physics objects
+		matStart.rotateY(1.57f);
+		matStart.rotateZ(0.7f);
+		matEnd.rotateY(-0.7f);
+		matEnd.rotateX(-0.7f);
+		matEnd.rotateZ(0.7f);
+
+		// init sound settings
+		bgMusic.setLocation(dio.getWorldLocation());
+		attackSfx.setLocation(dio.getWorldLocation());
+		setEarParameters();
+		bgMusic.play();
+	}
+
+	public void setEarParameters() {
+		Camera cam = engine.getRenderSystem().getViewport("MAIN").getCamera();
+		audioMgr.getEar().setLocation(dio.getWorldLocation());
+		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0f, 1f, 0f));
+	}
+
+	@Override
+	public void initializePhysicsObjects(){
+		float[] gravity = {0f,-20f,0f};
+		physicsEngine = engine.getSceneGraph().getPhysicsEngine();
+		physicsEngine.setGravity(gravity);
+
+		// create physics world
+		float mass = 1.0f;
+		float up[] = {0f,1f,0f};
+		float radius = 0.75f;
+		float height = 2.0f;
+		Vector3f loc;
+		Quaternionf rot;
+
+		// creates physics obj for DIO
+		loc = dio.getWorldLocation();
+		rot = new Quaternionf();
+		dio.getWorldRotation().getNormalizedRotation(rot);
+		physicsObj1 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
+		physicsObj1.setBounciness(0.8f);
+		physicsObj1.disableSleeping();
+		dio.setPhysicsObject(physicsObj1);
+		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
+		physicsObj1.setDamping(0.8f,0.8f); // prevents sliding
+		physicsObj1.setFriction(1.0f); // also to prevent movement
+
+
+		/*
+		// for MIKU
+		loc = miku.getWorldLocation();
+		rot = new Quaternionf();
+		(miku.getWorldLocation()).getNormalizedRotation(rot);
+		physicsObj2 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
+		physicsObj2.setBounciness(0.8f);
+		physicsObj2.disableSleeping();
+		miku.setPhysicsObject(physicsObj2);
+		*/
+
+		loc = ground.getWorldLocation();
+		rot = new Quaternionf();
+		ground.getWorldRotation().getNormalizedRotation(rot);
+		physicsPlane = (engine.getSceneGraph()).addPhysicsStaticPlane(loc, rot, up, 0f);
+		physicsPlane.setBounciness(1f);
+		ground.setPhysicsObject(physicsPlane);
 	}
 
 	protected void processNetworking(float elapsTime) {
@@ -517,13 +637,32 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void update()
-	{	// updates elapsed time
+	{	// interpolate rotations for smooth movement
+		if (rotate) {
+			if (interpolation < 1.0f) {
+				interpolation += speed;
+
+				// create quats from matrices
+				matStart.getNormalizedRotation(quatStart);
+				matEnd.getNormalizedRotation(quatEnd);
+				// interpolate between quats
+				quatInterp = new Quaternionf(quatStart);
+				if (lerp)	quatInterp.nlerp(quatEnd, interpolation);
+				else	quatInterp.slerp(quatEnd, interpolation);
+				// converts back to matrix and sets rotation
+				quatInterp.get(matInterp);
+				dio.setLocalRotation(matInterp);
+			}
+		}
+
+		// updates elapsed time
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
 		if (!paused) {elapsTime += (currFrameTime - lastFrameTime) / 1000.0;}
 
 		// check collisions and updates hudMsgs as necessary
 		checkCollisions();
+
 		//---------ANIMATION LOGIC ------
 		if (dio.getShape() instanceof AnimatedShape) {
         AnimatedShape as = (AnimatedShape) dio.getShape();
@@ -539,14 +678,16 @@ public class MyGame extends VariableFrameRateGame
         // This MUST be called every frame for the character to move its limbs
     	}
 		isMoving = false;
-		//checking if packets received by the client from the server
+
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
 		String scoreStr = Integer.toString(picturesTaken);
+
 		// strings
 		String dispStr1 = "Time = " + elapsTimeStr + " : Photos Taken = " + scoreStr;
 		String dispStr2 = hudMsg;
+
 		// colors and positions
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(0,1,0);
@@ -566,8 +707,36 @@ public class MyGame extends VariableFrameRateGame
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
 		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
+		// update sound
+		bgMusic.setLocation(dio.getWorldLocation());
+		attackSfx.setLocation(dio.getWorldLocation());
+		setEarParameters();
+
+		// update physics
+		if (walking) {
+			physicsEngine.update((float)elapsTime/1000.0f);
+			for (GameObject go : engine.getSceneGraph().getGameObjects()){
+				if (go.getPhysicsObject() != null) {
+					// set translation
+					Vector3f poLoc = go.getPhysicsObject().getLocation();
+					Matrix4f locMat = new Matrix4f();
+					locMat.set(3,0,poLoc.x()); locMat.set(3,1,poLoc.y()); locMat.set(3,2,poLoc.z());
+					go.setLocalTranslation(locMat);
+
+					// set rotation
+					Quaternionf rot = go.getPhysicsObject().getRotation();
+					Matrix4f rotMat = new Matrix4f();
+					rot.get(rotMat);
+					go.setLocalRotation(rotMat);
+				}
+			}
+		}
+
 		// update inputs and camera according to game conditions
-		if (!gameOver || gameWon) im.update((float)elapsTime);
+		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
+		if (!gameOver || gameWon) {
+			walking = true;
+			im.update(frame);}
 
 		// process networking packets
 		processNetworking((float)elapsTime);
@@ -582,25 +751,50 @@ public class MyGame extends VariableFrameRateGame
             protClient.sendMoveMessage(dio.getWorldLocation());
         }
     }
+	
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	Vector3f loc, fwd, newLocation, camU, camV, camN;
 		Matrix4f rot;
 		Camera cam = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 		switch (e.getKeyCode())
-		{	case KeyEvent.VK_1: // pause/unpause game
+		{	case KeyEvent.VK_TAB: // pause/unpause game
 				paused = !paused;
 				break;
-			case KeyEvent.VK_C: // show/hide axes
+			case KeyEvent.VK_1:
+				rotate = false;
+				dio.setLocalRotation(matStart);
+				break;
+			case KeyEvent.VK_2:
+				rotate = false;
+				dio.setLocalRotation(matEnd);
+				break;
+			case KeyEvent.VK_3:
+				dio.setLocalRotation(matStart);
+				interpolation = 0.0f;
+				rotate = true; lerp = true;
+				break;
+			case KeyEvent.VK_4:
+				dio.setLocalRotation(matStart);
+				interpolation = 0.0f;
+				rotate = true; lerp = false;
+				break;
+			case KeyEvent.VK_C: // toggle axes
 				axesVisible = !axesVisible;
 				if (axesVisible) {
         			x.setLocalScale(new Matrix4f().scaling(10f));
 					y.setLocalScale(new Matrix4f().scaling(10f));
 					z.setLocalScale(new Matrix4f().scaling(10f));
+					// visualizes physics world
+					//engine.enableGraphicsWorldRender();
+					engine.enablePhysicsWorldRender();
 				} else {
 					x.setLocalScale(new Matrix4f().scaling(0f));
 					y.setLocalScale(new Matrix4f().scaling(0f));
 					z.setLocalScale(new Matrix4f().scaling(0f));
+					// visualizes physics world
+					//engine.disableGraphicsWorldRender();
+					engine.disablePhysicsWorldRender();
 				}
 				break;
 			case KeyEvent.VK_SPACE:	// win/lose condition
