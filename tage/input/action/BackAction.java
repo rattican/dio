@@ -36,7 +36,7 @@ public class BackAction implements IAction {
         if (po == null) return;
         Vector3f fwd = av.getWorldForwardVector();
         fwd.y = 0f;
-        float speed = -0.01f * evt.getValue() * time;
+        float speed = -5f * evt.getValue();
         float vx = fwd.x * speed;
         float vz = fwd.z * speed;
         float[] vel = po.getLinearVelocity();

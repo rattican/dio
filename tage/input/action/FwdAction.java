@@ -56,7 +56,7 @@ public class FwdAction extends AbstractInputAction
 		if (po == null) return;
 		fwd = av.getWorldForwardVector();
 		fwd.y = 0.0f;
-		float speed = 0.01f * e.getValue() * time;
+		float speed = 5f * e.getValue();
 		float vx = fwd.x * speed;
 		float vz = fwd.z * speed;
 		float[] vel = po.getLinearVelocity();
