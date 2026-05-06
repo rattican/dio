@@ -70,7 +70,7 @@ public class MyGame extends VariableFrameRateGame
 	private boolean axesVisible = true;
 
 	// player state
-	private boolean walking = false;
+	private boolean running = false;
 	private float vals[] = new float[16];
 
 	// track elapsed time for HUD
@@ -703,7 +703,7 @@ public class MyGame extends VariableFrameRateGame
 		setEarParameters();
 
 		// update physics
-		if (walking) {
+		if (running) {
 			physicsEngine.update((float)elapsTime/1000.0f);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
 				if (go.getPhysicsObject() != null) {
@@ -725,7 +725,7 @@ public class MyGame extends VariableFrameRateGame
 		// update inputs and camera according to game conditions
 		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
 		if (!gameOver || gameWon) {
-			walking = true;
+			running = true;
 			im.update(frame);}
 
 		// process networking packets

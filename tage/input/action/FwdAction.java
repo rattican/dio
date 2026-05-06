@@ -6,9 +6,8 @@ import a3.ProtocolClient;
 import tage.*;
 import tage.input.action.AbstractInputAction; 
 import net.java.games.input.Event; 
-import org.joml.*;
-
-import a3.MyGame;
+import org.joml.Vector3f;
+import tage.physics.PhysicsObject;;
 
 /**
  * FwdAction is a custom input action added to the TAGE engine. This handles forward movement for the avatar on both keyboard and gamepad inputs.
@@ -24,8 +23,10 @@ public class FwdAction extends AbstractInputAction
 {   	
     private MyGame game;
 	private GameObject av;
-	private Vector3f oldPosition, newPosition;
-	private Vector4f fwdDirection;
+	private PhysicsObject po;
+	private Vector3f fwd;
+	// private Vector3f oldPosition, newPosition;
+	// private Vector4f fwdDirection;
 	private ProtocolClient protClient;
 
     public FwdAction(MyGame g, ProtocolClient p) { 
@@ -42,17 +43,27 @@ public class FwdAction extends AbstractInputAction
 	@Override
 	public void performAction(float time, Event e)
 	{	av = game.getAvatar();
-    	oldPosition = av.getWorldLocation();
-    	fwdDirection = new Vector4f(0f,0f,1f,1f);
-    	fwdDirection.mul(av.getWorldRotation());   
-    // Scale movement
-   		fwdDirection.mul(0.1f * time); 
-    	newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
-    	av.setLocalLocation(newPosition);
-    // Send network update
+		
+    	// oldPosition = av.getWorldLocation();
+    	// fwdDirection = new Vector4f(0f,0f,1f,1f);
+    	// fwdDirection.mul(av.getWorldRotation());
+		// // scale movement
+   		// fwdDirection.mul(0.1f * time); 
+    	// newPosition = oldPosition.add(fwdDirection.x(), fwdDirection.y(), fwdDirection.z());
+    	// av.setLocalLocation(newPosition);
+
+		po = av.getPhysicsObject();
+		if (po == null) return;
+		fwd = av.getWorldForwardVector();
+		fwd.y = 0.0f;
+		float speed = 0.01f * e.getValue() * time;
+		float vx = fwd.x * speed;
+		float vz = fwd.z * speed;
+		float[] vel = po.getLinearVelocity();
+		po.setLinearVelocity(new float[]{vx, vel[1], vz});
+
+		// send network update
     	game.sendNetworkMovementUpdate();
 		game.setIsMoving(true);
 	}
 }
-
-
