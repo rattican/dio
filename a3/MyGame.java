@@ -717,6 +717,9 @@ public class MyGame extends VariableFrameRateGame
 			physicsEngine.update((float)elapsTime/1000.0f);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
 				if (go.getPhysicsObject() != null) {
+					// TODO: avatar only shifts in WASD once, then goes back. needs to be updated continuously to match
+					// set physics obj to match game obj position and rotation?
+
 					// set translation
 					Vector3f poLoc = go.getPhysicsObject().getLocation();
 					Matrix4f locMat = new Matrix4f();
