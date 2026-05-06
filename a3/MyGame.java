@@ -602,23 +602,11 @@ public class MyGame extends VariableFrameRateGame
 		dio.getWorldRotation().getNormalizedRotation(rot);
 		physicsObj1 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
 		physicsObj1.setBounciness(0.8f);
+		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
+		physicsObj1.setDamping(0.5f,0.5f); // prevents sliding
+		physicsObj1.setFriction(0.5f); // also to prevent movement
 		physicsObj1.disableSleeping();
 		dio.setPhysicsObject(physicsObj1);
-		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
-		physicsObj1.setDamping(0.8f,0.8f); // prevents sliding
-		physicsObj1.setFriction(1.0f); // also to prevent movement
-
-
-		/*
-		// for MIKU
-		loc = miku.getWorldLocation();
-		rot = new Quaternionf();
-		(miku.getWorldLocation()).getNormalizedRotation(rot);
-		physicsObj2 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
-		physicsObj2.setBounciness(0.8f);
-		physicsObj2.disableSleeping();
-		miku.setPhysicsObject(physicsObj2);
-		*/
 
 		loc = ground.getWorldLocation();
 		rot = new Quaternionf();
@@ -660,7 +648,10 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		if (!paused) {elapsTime += (currFrameTime - lastFrameTime) / 1000.0;}
 
-		// check collisions and updates hudMsgs as necessary
+		// save frame time for physics
+		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
+
+		// also updates hudMsgs
 		checkCollisions();
 
 		//---------ANIMATION LOGIC ------
@@ -705,7 +696,7 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
-		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
+		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update sound
 		bgMusic.setLocation(dio.getWorldLocation());
@@ -714,29 +705,27 @@ public class MyGame extends VariableFrameRateGame
 
 		// update physics
 		if (running) {
-			physicsEngine.update((float)elapsTime/1000.0f);
+			physicsEngine.update(frame);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
+				PhysicsObject po = go.getPhysicsObject();
 				if (go.getPhysicsObject() != null) {
-					// TODO: avatar only shifts in WASD once, then goes back. needs to be updated continuously to match
-					// set physics obj to match game obj position and rotation?
 
 					// set translation
-					Vector3f poLoc = go.getPhysicsObject().getLocation();
-					Matrix4f locMat = new Matrix4f();
-					locMat.set(3,0,poLoc.x()); locMat.set(3,1,poLoc.y()); locMat.set(3,2,poLoc.z());
-					go.setLocalTranslation(locMat);
+					Vector3f poLoc = po.getLocation();
+					go.setLocalLocation(poLoc);
 
-					// set rotation
-					Quaternionf rot = go.getPhysicsObject().getRotation();
-					Matrix4f rotMat = new Matrix4f();
-					rot.get(rotMat);
-					go.setLocalRotation(rotMat);
+					// set rotation if not avatar
+					if (go != dio) {
+						Quaternionf rot = go.getPhysicsObject().getRotation();
+						Matrix4f rotMat = new Matrix4f();
+						rot.get(rotMat);
+						go.setLocalRotation(rotMat);
+					}
 				}
 			}
 		}
 
 		// update inputs and camera according to game conditions
-		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
 		if (!gameOver || gameWon) {
 			running = true;
 			im.update(frame);}
