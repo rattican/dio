@@ -118,6 +118,10 @@ public class MyGame extends VariableFrameRateGame
 
 	// camera orbit
 	private CameraOrbit3D orbit;
+	//dolphin NPC:
+	private ObjShape npcS;
+	private TextureImage npcTx;
+	private GhostNPC ghostNPS;
 
 	//for networking:
 	private String myType; // to make sure which character is it
@@ -165,7 +169,10 @@ public class MyGame extends VariableFrameRateGame
 		float yaw = (float)java.lang.Math.atan2(m02, m00);
 		return (float)java.lang.Math.toDegrees(yaw);
 	}
-
+	public GameObject getTerrain() { return terrain; }
+	//for NPC getter :
+	public ObjShape getNPCshape() { return npcS; }
+	public TextureImage getNPCtexture() { return npcTx; }
 	//from code07a2
 	//public GameObject getAvatar() { return avatar; }
 	public ObjShape getGhostShape() { return ghostS; }
@@ -266,6 +273,8 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{	
 		dioS = new ImportedModel("dio.obj");
+		//load npcS
+		npcS = new ImportedModel("dolphinHighPoly.obj");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -316,6 +325,7 @@ public class MyGame extends VariableFrameRateGame
 		ghostT = new TextureImage("miku.png"); 
 		grassTx = new TextureImage("grass.jpg");
 		hillsTx = new TextureImage("hills.jpg");
+		npcTx = new TextureImage("Dolphin_HighPolyUV.jpg");
 	}
 
 	@Override
