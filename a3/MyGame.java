@@ -41,7 +41,6 @@ import a3.MyGame;
 	Emily's TO DO: Physics, Sound, DIO animation, fixes from Milestone 1
 
 	Low-priority Task:
-	Update dolphin reference in run_dio.bat later
 	Modify second camera so skybox is not visible in overhead view
 	Add terrain features in distance
 	
@@ -70,7 +69,7 @@ public class MyGame extends VariableFrameRateGame
 	private boolean axesVisible = true;
 
 	// player state
-	private boolean walking = false;
+	private boolean running = false;
 	private float vals[] = new float[16];
 
 	// track elapsed time for HUD
@@ -99,7 +98,7 @@ public class MyGame extends VariableFrameRateGame
 	private InputManager im;
 	private GameObject dio, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain;
 	private ObjShape dioS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS;
-	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx;
+	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx, npcTx, enemyTx;
 	private Light light1, light2, light3, light4;
 
 	// quaternion and matrix for physics
@@ -120,7 +119,6 @@ public class MyGame extends VariableFrameRateGame
 	private CameraOrbit3D orbit;
 	//dolphin NPC:
 	private ObjShape npcS;
-	private TextureImage npcTx;
 	private GhostNPC ghostNPS;
 
 	//for networking:
@@ -173,6 +171,7 @@ public class MyGame extends VariableFrameRateGame
 	//for NPC getter :
 	public ObjShape getNPCshape() { return npcS; }
 	public TextureImage getNPCtexture() { return npcTx; }
+	public TextureImage getENEMYtexture() { return enemyTx; }
 	//from code07a2
 	//public GameObject getAvatar() { return avatar; }
 	public ObjShape getGhostShape() { return ghostS; }
@@ -274,7 +273,7 @@ public class MyGame extends VariableFrameRateGame
 	{	
 		dioS = new ImportedModel("dio.obj");
 		//load npcS
-		npcS = new ImportedModel("dolphinHighPoly.obj");
+		npcS = new ImportedModel("dio.obj");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -314,7 +313,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	dioTx = new TextureImage("dio_uv.png");
+	{	dioTx = new TextureImage("dio.png");
 		pyrTx1 = new TextureImage("sand_brick.jpg");
 		pyrTx2 = new TextureImage("blue_brick.jpg");
 		pyrTx3 = new TextureImage("rocky_brick.jpg");
@@ -325,7 +324,8 @@ public class MyGame extends VariableFrameRateGame
 		ghostT = new TextureImage("miku.png"); 
 		grassTx = new TextureImage("grass.jpg");
 		hillsTx = new TextureImage("hills.jpg");
-		npcTx = new TextureImage("Dolphin_HighPolyUV.jpg");
+		npcTx = new TextureImage("dio_green.png");
+		enemyTx = new TextureImage("dio_red.png");
 	}
 
 	@Override
@@ -356,7 +356,7 @@ public class MyGame extends VariableFrameRateGame
 		// build local avatar in the center of the window
 		if (myType.equalsIgnoreCase("miku")) {
 			dio = new GameObject(GameObject.root(), ghostS, ghostT);
-			initialScale = (new Matrix4f()).scaling(0.55f);
+			initialScale = (new Matrix4f()).scaling(0.5f);
 		} else {
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(1.5f);
@@ -602,23 +602,11 @@ public class MyGame extends VariableFrameRateGame
 		dio.getWorldRotation().getNormalizedRotation(rot);
 		physicsObj1 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
 		physicsObj1.setBounciness(0.8f);
+		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
+		physicsObj1.setDamping(0.5f,0.5f); // prevents sliding
+		physicsObj1.setFriction(0.5f); // also to prevent movement
 		physicsObj1.disableSleeping();
 		dio.setPhysicsObject(physicsObj1);
-		physicsObj1.setAngularFactor(0f); // locked to prevent falling over
-		physicsObj1.setDamping(0.8f,0.8f); // prevents sliding
-		physicsObj1.setFriction(1.0f); // also to prevent movement
-
-
-		/*
-		// for MIKU
-		loc = miku.getWorldLocation();
-		rot = new Quaternionf();
-		(miku.getWorldLocation()).getNormalizedRotation(rot);
-		physicsObj2 = (engine.getSceneGraph()).addPhysicsCapsule(mass, loc, rot, 0, radius, height);
-		physicsObj2.setBounciness(0.8f);
-		physicsObj2.disableSleeping();
-		miku.setPhysicsObject(physicsObj2);
-		*/
 
 		loc = ground.getWorldLocation();
 		rot = new Quaternionf();
@@ -660,7 +648,10 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		if (!paused) {elapsTime += (currFrameTime - lastFrameTime) / 1000.0;}
 
-		// check collisions and updates hudMsgs as necessary
+		// save frame time for physics
+		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
+
+		// also updates hudMsgs
 		checkCollisions();
 
 		//---------ANIMATION LOGIC ------
@@ -705,7 +696,7 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
 		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
-		dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
+		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 
 		// update sound
 		bgMusic.setLocation(dio.getWorldLocation());
@@ -713,32 +704,30 @@ public class MyGame extends VariableFrameRateGame
 		setEarParameters();
 
 		// update physics
-		if (walking) {
-			physicsEngine.update((float)elapsTime/1000.0f);
+		if (running) {
+			physicsEngine.update(frame);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
+				PhysicsObject po = go.getPhysicsObject();
 				if (go.getPhysicsObject() != null) {
-					// TODO: avatar only shifts in WASD once, then goes back. needs to be updated continuously to match
-					// set physics obj to match game obj position and rotation?
 
 					// set translation
-					Vector3f poLoc = go.getPhysicsObject().getLocation();
-					Matrix4f locMat = new Matrix4f();
-					locMat.set(3,0,poLoc.x()); locMat.set(3,1,poLoc.y()); locMat.set(3,2,poLoc.z());
-					go.setLocalTranslation(locMat);
+					Vector3f poLoc = po.getLocation();
+					go.setLocalLocation(poLoc);
 
-					// set rotation
-					Quaternionf rot = go.getPhysicsObject().getRotation();
-					Matrix4f rotMat = new Matrix4f();
-					rot.get(rotMat);
-					go.setLocalRotation(rotMat);
+					// set rotation if not avatar
+					if (go != dio) {
+						Quaternionf rot = go.getPhysicsObject().getRotation();
+						Matrix4f rotMat = new Matrix4f();
+						rot.get(rotMat);
+						go.setLocalRotation(rotMat);
+					}
 				}
 			}
 		}
 
 		// update inputs and camera according to game conditions
-		float frame = (float)(currFrameTime - lastFrameTime) / 1000.0f;
 		if (!gameOver || gameWon) {
-			walking = true;
+			running = true;
 			im.update(frame);}
 
 		// process networking packets
