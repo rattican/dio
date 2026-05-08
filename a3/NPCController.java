@@ -58,14 +58,7 @@ public class NPCController
                         playerIsNear = npc.isPlayerNear();
                     }
 
-                    // 2. Execute Action based on proximity state
-                    if (playerIsNear) {
-                        npc.setSpinning(true);
-                    } else {
-                        npc.setSpinning(false);
-                        npc.setSpeed(0.1); // Normal patrol speed
-                    }
-
+                    
                     // 3. Move the physical dolphin
                     npc.updateLocation();
                 }

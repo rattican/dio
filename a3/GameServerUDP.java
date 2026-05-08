@@ -89,15 +89,12 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		if(messageTokens[0].compareTo("move") == 0)
 		{	UUID clientID = UUID.fromString(messageTokens[1]);
 			String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-			String yaw;
-			if (messageTokens.length >= 6) {
-				// New format with yaw
-				yaw = messageTokens[5];
-			} else {
-				// Old format without yaw
-				yaw = "135.0";
+			String yaw = messageTokens[5];
+			String scale = "1.0"; // Default scale
+			if (messageTokens.length >= 7) {
+				scale = messageTokens[6];
 			}
-			sendMoveMessages(clientID, pos, yaw);
+			sendMoveMessages(clientID, pos, yaw, scale);
 		}
 		}
 	}
@@ -194,16 +191,19 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// connected to the server when it receives a MOVE message from the remote client.   
 	// Message Format: (move,remoteId,x,y,z) where x, y, and z represent the position.
 
-	public void sendMoveMessages(UUID clientID, String[] position, String yaw)
+	public void sendMoveMessages(UUID clientID, String[] position, String yaw, String scale)
 	{	try 
-		{	String message = new String("move," + clientID.toString());
+		{	
+			String message = new String("move," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
 			message += "," + yaw;
+			message += "," + scale;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 
-		{	e.printStackTrace();
+		{	
+			e.printStackTrace();
 	}	}
 }
