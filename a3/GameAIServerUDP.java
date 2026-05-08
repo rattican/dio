@@ -28,6 +28,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();  // Index 3: Y
                 message += "," + npc.getZ();  // Index 4: Z
                 message += "," + npcCtrl.getCriteria(); // Index 5: Proximity Threshold (8.0)
+                message += "," + (npc.isEnemy() ? "1" : "0"); //for check if it friend or enemy
                 sendPacketToAll(message);
             }
         }
@@ -46,6 +47,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();
                 message += "," + npc.getZ();
                 message += "," + npc.getYaw();
+                message += "," + (npc.isEnemy() ? "1" : "0");
                 sendPacketToAll(message);
             }
         } catch (IOException e) {
@@ -72,7 +74,7 @@ public class GameAIServerUDP extends GameServerUDP
             if (messageTokens[0].compareTo("isnear") == 0) { 
                 try {
                     int npcID = Integer.parseInt(messageTokens[2]); // Index 2 is the Dolphin ID
-                    boolean isNear = Boolean.parseBoolean(messageTokens[3]); // Index 3 is true/false
+                    boolean isNear = messageTokens[3].trim().equalsIgnoreCase("true"); // Index 3 is true/false
                     
                     for (NPC npc : npcCtrl.getNPCList()) {
                         if (npc.getId() == npcID) {
@@ -105,7 +107,7 @@ public class GameAIServerUDP extends GameServerUDP
     }
     public void sendNPCstart(UUID clientID) {
         try {
-            // Tell a newly connected client to spawn all 5 dolphins
+            // Tell a newly connected client to spawn all dolphins
             for (NPC npc : npcCtrl.getNPCList()) {
                 String message = new String("createNPC");
                 message += "," + npc.getId(); // Sends unique ID
@@ -113,6 +115,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();
                 message += "," + npc.getZ();
                 message += "," + npc.getYaw();
+                message += "," + (npc.isEnemy() ? "1" : "0"); // 1 for Enemy, 0 for Friend
                 sendPacket(message, clientID); 
             }
         } catch (IOException e) {

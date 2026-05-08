@@ -5,23 +5,25 @@ import java.util.Random;
 
 public class NPCController 
 {
+    Random rand = new Random();
     private GameAIServerUDP server;
     private ArrayList<NPC> npcList = new ArrayList<>();
-    private final int NUM_DOLPHINS = 5; // Spawns exactly 5 dolphins!
 
     private float criteria = 8.0f; // Distance threshold to trigger spinning
     private long lastTickUpdateTime;
 
     public NPCController() 
     {
-        Random rand = new Random();
-        // Instantiate 5 dolphins at different random points on the map
-        for (int i = 0; i < NUM_DOLPHINS; i++) {
-            NPC npc = new NPC(i);
-            // Randomize starting positions so they are spread out
-            int rx = rand.nextInt(40) - 20; // range: -20 to 20
-            int rz = rand.nextInt(20) - 10; // range: -10 to 10
-            npc.randomizeLocation(rx, rz);
+        for (int i = 0; i < 5; i++) {
+        NPC npc = new NPC(i, false);
+        npc.randomizeLocation(rand.nextInt(40)-20, rand.nextInt(20)-10);
+        npcList.add(npc);
+        }
+    // Spawn 2 enemy dolphins (IDs 5 and 6)
+        for (int i = 5; i < 7; i++) {
+            NPC npc = new NPC(i, true);
+            npc.randomizeLocation(rand.nextInt(40)-20, rand.nextInt(20)-10);
+            npc.setSpeed(0.15); // Make them slightly faster!
             npcList.add(npc);
         }
     }
@@ -56,14 +58,7 @@ public class NPCController
                         playerIsNear = npc.isPlayerNear();
                     }
 
-                    // 2. Execute Action based on proximity state
-                    if (playerIsNear) {
-                        npc.setSpinning(true);
-                    } else {
-                        npc.setSpinning(false);
-                        npc.setSpeed(0.1); // Normal patrol speed
-                    }
-
+                    
                     // 3. Move the physical dolphin
                     npc.updateLocation();
                 }

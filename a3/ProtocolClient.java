@@ -58,9 +58,9 @@ public class ProtocolClient extends GameConnectionClient
                     Float.parseFloat(messageTokens[4])  
                 );
                 float ghostYaw = Float.parseFloat(messageTokens[5]); 
-                
+                boolean isEnemy = messageTokens[6].equals("1");
                 try {
-                    createGhostNPC(npcId, ghostPosition);
+                    createGhostNPC(npcId, ghostPosition, isEnemy);
                     GhostNPC target = findGhostNPC(npcId);
                     if (target != null) {
                         target.setLocalRotation(new org.joml.Matrix4f().rotationY((float)java.lang.Math.toRadians(ghostYaw)));
@@ -73,20 +73,28 @@ public class ProtocolClient extends GameConnectionClient
             // 2. Handle Movement Updates (mnpc)
             // Packet Format: mnpc, npcID, x, y, z, yaw
             if (messageTokens[0].compareTo("mnpc") == 0) {
-                int npcId = Integer.parseInt(messageTokens[1]); 
-                Vector3f ghostPosition = new Vector3f(
-                    Float.parseFloat(messageTokens[2]), 
-                    Float.parseFloat(messageTokens[3]), 
-                    Float.parseFloat(messageTokens[4])  
-                );
-                float ghostYaw = Float.parseFloat(messageTokens[5]);
-                
-                // FIXED: Pass the npcId to update the correct dolphin!
-                updateGhostNPC(npcId, ghostPosition, 1.0);
-                
-                GhostNPC target = findGhostNPC(npcId);
-                if (target != null) {
-                    target.setLocalRotation(new org.joml.Matrix4f().rotationY((float)java.lang.Math.toRadians(ghostYaw)));
+                // Only try to access Index 6 if the packet actually has enough parts
+                if (messageTokens.length > 6) {
+                    int npcId = Integer.parseInt(messageTokens[1]);
+                    Vector3f npcPos = new Vector3f(
+                        Float.parseFloat(messageTokens[2]),
+                        Float.parseFloat(messageTokens[3]),
+                        Float.parseFloat(messageTokens[4])
+                    );
+                    boolean isEnemy = messageTokens[6].equals("1");
+
+                    updateGhostNPC(npcId, npcPos, isEnemy);
+                    if (isEnemy) {
+                        float dist = game.getPlayerPosition().distance(npcPos);
+                        
+                        // If the dolphin is red and we are within 2.0 units...
+                        if (dist < 2.0f) { 
+                            System.out.println("FATAL COLLISION WITH ENEMY " + npcId);
+                            game.setGameOver(true); // Call the setter in MyGame
+                        }
+                    }
+                } else {
+                    System.out.println("Warning: Received short mnpc packet!");
                 }
             }
 
@@ -103,8 +111,6 @@ public class ProtocolClient extends GameConnectionClient
             
                 // Calculate distance between local player (dio/miku) and this specific dolphin
                 float dist = game.getPlayerPosition().distance(npcPosition);
-            
-                // Send proximity update back to the server for this specific dolphin ID
                 try {
                     if (dist < criteria) {
                         sendPacket("isnear," + id.toString() + "," + npcId + ",true");
@@ -216,42 +222,40 @@ public class ProtocolClient extends GameConnectionClient
     }
 
     //--------GHOST NPC SECTIONs -------
-    private void createGhostNPC(int id, Vector3f position) throws IOException {
+    private void createGhostNPC(int id, Vector3f position, boolean isEnemy) throws IOException {
         if (findGhostNPC(id) == null) {
-            if (game.getNPCshape() == null || game.getNPCtexture() == null) {
+            // Pick the texture based on the isEnemy flag
+            // dio_red for enemies, dio_green for friends
+            TextureImage tex = isEnemy ? game.getENEMYtexture() : game.getNPCtexture();
+
+            if (game.getNPCshape() == null || tex == null) {
                 System.out.println("CRITICAL WARNING: Client NPC shape or texture is NULL!");
                 return;
             }
 
-            GhostNPC newDolphin = new GhostNPC(id, game.getNPCshape(), game.getNPCtexture(), position);
+            GhostNPC newDolphin = new GhostNPC(id, game.getNPCshape(), tex, position);
             
+            // Set scale and rendering states
             newDolphin.setLocalScale((new org.joml.Matrix4f()).scaling(3.0f)); 
             newDolphin.getRenderStates().setRenderHiddenFaces(true);
             newDolphin.getRenderStates().hasLighting(true);
             
             npcList.add(newDolphin);
-            System.out.println("Successfully registered Dolphin ID: " + id + " to rendering list.");
+            System.out.println("Registered " + (isEnemy ? "ENEMY" : "FRIEND") + " Dolphin ID: " + id);
         }
     }
 
-    private void updateGhostNPC(int id, Vector3f position, double gsize) {
-        boolean gs;
+    private void updateGhostNPC(int id, Vector3f position, boolean isEnemy) {
         GhostNPC targetDolphin = findGhostNPC(id);
-        
         if (targetDolphin == null) {
-            try {
-                createGhostNPC(id, position);
-                targetDolphin = findGhostNPC(id);
-            } catch (IOException e) {
-                System.out.println("error creating ghost npc");
-            }
-        }
-        
-        if (targetDolphin != null) {
-            targetDolphin.setPosition(position); 
+            try { createGhostNPC(id, position, isEnemy); } 
+            catch (IOException e) { e.printStackTrace(); }
+        } else {
+            // SNAP TO TERRAIN: Get height from the local terrain object
+            float groundH = game.getTerrain().getHeight(position.x(), position.z());
             
-            if (gsize == 1.0) gs = false; else gs = true;
-            targetDolphin.setSize(gs);
+            // Use a small offset so they don't look half-buried (0.5f - 1.0f)
+            targetDolphin.setPosition(new Vector3f(position.x(), groundH + 0.8f, position.z())); 
         }
     }
 
