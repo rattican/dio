@@ -60,7 +60,7 @@ public class MyGame extends VariableFrameRateGame
 
 	// audio and background/sound effects
 	private IAudioManager audioMgr;
-	private Sound bgMusic, attackSfx, dieSfx, winSfx;
+	private Sound bgMusic, attackSfx, dolphinSfx;
 
 	// game state
 	private boolean paused = false;
@@ -183,6 +183,7 @@ public class MyGame extends VariableFrameRateGame
 	public void setGameOver(boolean v) { 
 		this.gameOver = v; 
 		if (v == true) {
+			attackSfx.play();
 			this.running = false; // Stop the physics engine
 			this.paused = true;   // Pause movement
 			hudMsg = "GAME OVER! A predator dolphin caught you!";
@@ -299,24 +300,26 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadSounds() {
-		AudioResource rsrc1, rsrc2;
+		AudioResource rsrc1, rsrc2, rsrc3;
 		audioMgr = engine.getAudioManager();
 
 		// background music
 		rsrc1 = audioMgr.createAudioResource("bgMusic.wav", AudioResourceType.AUDIO_SAMPLE);
-		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 25, true);
+		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 5, true);
 		bgMusic.initialize(audioMgr);
-		bgMusic.setMaxDistance(10.0f);
-		bgMusic.setMinDistance(0.5f);
-		bgMusic.setRollOff(5.0f);
 
 		// attack sound effect when player hits enemy
 		rsrc2 = audioMgr.createAudioResource("attackSfx.wav", AudioResourceType.AUDIO_SAMPLE);
-		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 35, false);
+		attackSfx = new Sound(rsrc2, SoundType.SOUND_EFFECT, 15, false);
 		attackSfx.initialize(audioMgr);
-		attackSfx.setMaxDistance(10.0f);
-		attackSfx.setMinDistance(0.5f);
-		attackSfx.setRollOff(5.0f);
+
+		// dolphin sfx (3D)
+		rsrc3 = audioMgr.createAudioResource("dolphinSfx.wav", AudioResourceType.AUDIO_SAMPLE);
+		dolphinSfx = new Sound(rsrc3, SoundType.SOUND_EFFECT, 9, true);
+		dolphinSfx.initialize(audioMgr);
+		dolphinSfx.setMaxDistance(15f);
+		dolphinSfx.setMinDistance(0.5f);
+		dolphinSfx.setRollOff(5f);
 	}
 
 	@Override
@@ -580,16 +583,19 @@ public class MyGame extends VariableFrameRateGame
 		matEnd.rotateZ(0.7f);
 
 		// init sound settings
-		bgMusic.setLocation(dio.getWorldLocation());
+		bgMusic.setLocation(ground.getWorldLocation());
 		attackSfx.setLocation(dio.getWorldLocation());
+		dolphinSfx.setLocation(logo.getWorldLocation());
+
 		setEarParameters();
 		bgMusic.play();
+		dolphinSfx.play();
 	}
 
 	public void setEarParameters() {
 		Camera cam = engine.getRenderSystem().getViewport("MAIN").getCamera();
-		audioMgr.getEar().setLocation(dio.getWorldLocation());
-		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0f, 1f, 0f));
+		audioMgr.getEar().setLocation(cam.getLocation());
+		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0,1,0));
 	}
 
 	@Override
@@ -718,10 +724,6 @@ public class MyGame extends VariableFrameRateGame
 				dio.getPhysicsObject().setLinearVelocity(stopYVel);
 			}
 		}
-		// update sound
-		bgMusic.setLocation(dio.getWorldLocation());
-		attackSfx.setLocation(dio.getWorldLocation());
-		setEarParameters();
 
 		// update physics
 		if (running) {
@@ -749,6 +751,12 @@ public class MyGame extends VariableFrameRateGame
 		if (!gameOver || gameWon) {
 			running = true;
 			im.update(frame);}
+
+		// update sound
+		bgMusic.setLocation(ground.getWorldLocation());
+		attackSfx.setLocation(dio.getWorldLocation());
+		dolphinSfx.setLocation(logo.getWorldLocation());
+		setEarParameters();
 
 		// process networking packets
 		processNetworking((float)elapsTime);
