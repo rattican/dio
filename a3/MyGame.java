@@ -305,7 +305,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// background music
 		rsrc1 = audioMgr.createAudioResource("bgMusic.wav", AudioResourceType.AUDIO_SAMPLE);
-		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 5, true);
+		bgMusic = new Sound(rsrc1, SoundType.SOUND_MUSIC, 1, true);
 		bgMusic.initialize(audioMgr);
 
 		// attack sound effect when player hits enemy
@@ -315,11 +315,11 @@ public class MyGame extends VariableFrameRateGame
 
 		// dolphin sfx (3D)
 		rsrc3 = audioMgr.createAudioResource("dolphinSfx.wav", AudioResourceType.AUDIO_SAMPLE);
-		dolphinSfx = new Sound(rsrc3, SoundType.SOUND_EFFECT, 9, true);
+		dolphinSfx = new Sound(rsrc3, SoundType.SOUND_EFFECT, 100, true);
 		dolphinSfx.initialize(audioMgr);
-		dolphinSfx.setMaxDistance(15f);
+		dolphinSfx.setMaxDistance(500f);
 		dolphinSfx.setMinDistance(0.5f);
-		dolphinSfx.setRollOff(5f);
+		dolphinSfx.setRollOff(0.5f);
 	}
 
 	@Override
@@ -587,15 +587,16 @@ public class MyGame extends VariableFrameRateGame
 		attackSfx.setLocation(dio.getWorldLocation());
 		dolphinSfx.setLocation(logo.getWorldLocation());
 
-		setEarParameters();
+		//setEarParameters();
 		bgMusic.play();
 		dolphinSfx.play();
 	}
 
 	public void setEarParameters() {
 		Camera cam = engine.getRenderSystem().getViewport("MAIN").getCamera();
-		audioMgr.getEar().setLocation(cam.getLocation());
-		audioMgr.getEar().setOrientation(cam.getN(), new Vector3f(0,1,0));
+		audioMgr.getEar().setLocation(dio.getWorldLocation());
+		Vector3f fwd = new Vector3f(cam.getN()).mul(-1f);
+		audioMgr.getEar().setOrientation(fwd, new Vector3f(0,1,0));
 	}
 
 	@Override
