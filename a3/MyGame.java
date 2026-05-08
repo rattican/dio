@@ -125,7 +125,9 @@ public class MyGame extends VariableFrameRateGame
 	private String myType; // to make sure which character is it
 
 	// for animation:
+	private float hitTimer = 0.0f;
 	private boolean isMoving;
+	private boolean isHitting;
 
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
@@ -295,7 +297,7 @@ public class MyGame extends VariableFrameRateGame
 		logoS = new Plane();
 		ghostS = new AnimatedShape("miku.rkm", "miku.rks");
 		((AnimatedShape)ghostS).loadAnimation("WALK", "walk_miku.rka");
-	
+		((AnimatedShape)ghostS).loadAnimation("HIT", "hit_miku.rka");
 		terrainS = new TerrainPlane(128);
 	}
 
@@ -511,6 +513,7 @@ public class MyGame extends VariableFrameRateGame
 		TurnAction turnAction = new TurnAction(this);
 		KeyboardTurnLeftAction kbLeft = new KeyboardTurnLeftAction(this);
 		KeyboardTurnRightAction kbRight = new KeyboardTurnRightAction(this);
+		HitAction hitAction = new HitAction(this);
 		// pan and zoom
 		OverheadPanAction panUp = new OverheadPanAction(engine, 0);
 		OverheadPanAction panDown = new OverheadPanAction(engine, 1);
@@ -575,6 +578,10 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(
 			net.java.games.input.Component.Identifier.Key.M, zoomOut,
 			InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		// hit action for attack animation
+		im.associateActionWithAllKeyboards(
+			net.java.games.input.Component.Identifier.Key.SPACE, hitAction,
+			InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 
 		// init physics objects
 		matStart.rotateY(1.57f);
@@ -638,8 +645,9 @@ public class MyGame extends VariableFrameRateGame
     	if (protClient != null)
         	protClient.processPackets();
 		}
-		
+	//for miku animation
 	public void setIsMoving(boolean m) { isMoving = m; }
+	public void setIsHitting(boolean h) { isHitting = h; }
 
 	@Override
 	public void update()
@@ -674,18 +682,31 @@ public class MyGame extends VariableFrameRateGame
 
 		//---------ANIMATION LOGIC ------
 		if (dio.getShape() instanceof AnimatedShape) {
-        AnimatedShape as = (AnimatedShape) dio.getShape();
-        
-        	if (isMoving) {
-            	// Note: If 'EndCondition' still errors, 
-           	 	// check if it's AnimatedShape.EndCondition.LOOP (uppercase)
-				as.playAnimation("WALK", 0.5f, EndType.LOOP, 0);	
-			} else {
-            	as.stopAnimation();
-        	}
-        	as.updateAnimation();
-        // This MUST be called every frame for the character to move its limbs
-    	}
+			AnimatedShape as = (AnimatedShape) dio.getShape();
+
+			// 1. If J was just pressed, start the animation and the timer
+			if (isHitting) {
+				as.playAnimation("HIT", 1.0f, EndType.STOP, 0);
+				isHitting = false;
+				hitTimer = 1.0f; // Lock the state for 1 second (approx length of hit_miku.rka)
+				System.out.println("ANIMATION TRIGGERED: HIT");
+			}
+
+			// 2. PRIORITY CHECK: If the timer is still running, let the HIT play
+			if (hitTimer > 0) {
+				hitTimer -= frame; // Countdown
+				// Do NOT play any other animations here
+			} 
+			// 3. SECONDARY: If we aren't hitting, then we can walk
+			else if (isMoving) {
+				as.playAnimation("WALK", 0.5f, EndType.LOOP, 0);
+			} 
+			else {
+				as.stopAnimation();
+			}
+
+			as.updateAnimation();
+		}
 		isMoving = false;
 
 		// build and set HUD
@@ -890,4 +911,5 @@ public class MyGame extends VariableFrameRateGame
 		{	protClient.sendMoveMessage(dio.getWorldLocation());
 		}
 	}
+
 }
