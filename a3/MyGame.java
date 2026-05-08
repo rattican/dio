@@ -365,9 +365,11 @@ public class MyGame extends VariableFrameRateGame
 		if (myType.equalsIgnoreCase("miku")) {
 			dio = new GameObject(GameObject.root(), ghostS, ghostT);
 			initialScale = (new Matrix4f()).scaling(0.5f);
+			dio.setLocalTranslation(new Matrix4f().translation(0, -3.8f, 0));
 		} else {
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(1.5f);
+			dio.setLocalTranslation(new Matrix4f().translation(0, -0.9f, 0));
 		}
 		dio.setLocalTranslation(initialTranslation);
 		dio.setLocalScale(initialScale);
@@ -599,8 +601,8 @@ public class MyGame extends VariableFrameRateGame
 		// create physics world
 		float mass = 1.0f;
 		float up[] = {0f,1f,0f};
-		float radius = 0.75f;
-		float height = 2.0f;
+		float radius = myType.equalsIgnoreCase("miku") ? 0.3f : 0.75f;
+		float height = myType.equalsIgnoreCase("miku") ? 1.0f : 2.0f;
 		Vector3f loc;
 		Quaternionf rot;
 
@@ -703,9 +705,19 @@ public class MyGame extends VariableFrameRateGame
 		// update altitude of DIO based on height map
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
-		float heightOffset = myType.equalsIgnoreCase("miku") ? 2.0f : 1.0f;
-		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
-
+		float heightOffset = myType.equalsIgnoreCase("miku") ? 1.5f : 0.5f;		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
+		if (dio.getPhysicsObject() != null) {
+			if (loc.y() < (height + heightOffset)) {
+				// FIX: Create a float array instead of passing the Vector3f directly
+				float[] newLoc = { loc.x(), height + heightOffset, loc.z() };
+				dio.getPhysicsObject().setLocation(newLoc);
+				
+				// Also kill Y-velocity to prevent "bouncing" through the floor
+				float[] currentVel = dio.getPhysicsObject().getLinearVelocity();
+				float[] stopYVel = { currentVel[0], 0f, currentVel[2] };
+				dio.getPhysicsObject().setLinearVelocity(stopYVel);
+			}
+		}
 		// update sound
 		bgMusic.setLocation(dio.getWorldLocation());
 		attackSfx.setLocation(dio.getWorldLocation());

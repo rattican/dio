@@ -247,17 +247,15 @@ public class ProtocolClient extends GameConnectionClient
 
     private void updateGhostNPC(int id, Vector3f position, boolean isEnemy) {
         GhostNPC targetDolphin = findGhostNPC(id);
-        
         if (targetDolphin == null) {
-            try {
-                // If it doesn't exist yet, create it with the correct texture
-                createGhostNPC(id, position, isEnemy);
-            } catch (IOException e) {
-                System.out.println("error creating ghost npc");
-            }
+            try { createGhostNPC(id, position, isEnemy); } 
+            catch (IOException e) { e.printStackTrace(); }
         } else {
-            // If it already exists, just update its position
-            targetDolphin.setPosition(position); 
+            // SNAP TO TERRAIN: Get height from the local terrain object
+            float groundH = game.getTerrain().getHeight(position.x(), position.z());
+            
+            // Use a small offset so they don't look half-buried (0.5f - 1.0f)
+            targetDolphin.setPosition(new Vector3f(position.x(), groundH + 0.8f, position.z())); 
         }
     }
 
