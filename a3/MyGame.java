@@ -92,7 +92,7 @@ public class MyGame extends VariableFrameRateGame
 	private Vector3f spawnpoint;
 
 	// HUD messages
-	private String hudMsg = "GAME START! Take photos of the pyramids!";
+	private String hudMsg = "GAME START! DONT TOUCH The Pyramids AND RED DIO!";
 
 	// input manager and game object related stuff
 	private InputManager im;
@@ -180,6 +180,7 @@ public class MyGame extends VariableFrameRateGame
 	public GhostManager getGhostManager() { return gm; }
 	public ObjShape getDioShape() { return dioS; }
 	//game logic: if the dio/miku collide with the red dio, game over
+
 	public void setGameOver(boolean v) { 
 		this.gameOver = v; 
 		if (v == true) {
@@ -230,7 +231,7 @@ public class MyGame extends VariableFrameRateGame
 		if (dist1 < PHOTO_DIST) hudMsg = "Press P to photograph pyramid 1";
 		else if (dist2 < PHOTO_DIST) hudMsg = "Press P to photograph pyramid 2";
 		else if (dist3 < PHOTO_DIST) hudMsg = "Press P to photograph pyramid 3";
-		else hudMsg = "Visit pyramids to take photos";
+		else hudMsg = "DONT TOUCH Pyramids and RED DIO!";
 
 		// check distance to home for win condition
 		float homeDist = dioLocation.distance(spawnpoint);
@@ -368,7 +369,7 @@ public class MyGame extends VariableFrameRateGame
 		if (myType.equalsIgnoreCase("miku")) {
 			dio = new GameObject(GameObject.root(), ghostS, ghostT);
 			initialScale = (new Matrix4f()).scaling(0.5f);
-			dio.setLocalTranslation(new Matrix4f().translation(0, -3.8f, 0));
+			dio.setLocalTranslation(new Matrix4f().translation(0, -4.0f, 0));
 		} else {
 			dio = new GameObject(GameObject.root(), dioS, dioTx);
 			initialScale = (new Matrix4f()).scaling(1.5f);
@@ -712,7 +713,7 @@ public class MyGame extends VariableFrameRateGame
 		// update altitude of DIO based on height map
 		Vector3f loc = dio.getWorldLocation();
 		float height = terrain.getHeight(loc.x(), loc.z());
-		float heightOffset = myType.equalsIgnoreCase("miku") ? 1.5f : 0.5f;		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
+		float heightOffset = myType.equalsIgnoreCase("miku") ? 1.8f : 0.5f;		//dio.setLocalLocation(new Vector3f(loc.x(), height + heightOffset, loc.z()));
 		if (dio.getPhysicsObject() != null) {
 			if (loc.y() < (height + heightOffset)) {
 				// FIX: Create a float array instead of passing the Vector3f directly
