@@ -36,7 +36,7 @@ import a3.MyGame;
 /*
 	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
 	
-	Haley's TO DO: Miku animation, NPC/AI
+	Haley's TO DO: Miku animation, NPC/AI, game logic
 	
 	Emily's TO DO: Physics, Sound, DIO animation, fixes from Milestone 1
 
@@ -179,7 +179,15 @@ public class MyGame extends VariableFrameRateGame
 	public TextureImage getGhostTexture() { return ghostT; }
 	public GhostManager getGhostManager() { return gm; }
 	public ObjShape getDioShape() { return dioS; }
-
+	//game logic: if the dio/miku collide with the red dio, game over
+	public void setGameOver(boolean v) { 
+		this.gameOver = v; 
+		if (v == true) {
+			this.running = false; // Stop the physics engine
+			this.paused = true;   // Pause movement
+			hudMsg = "GAME OVER! A predator dolphin caught you!";
+		}
+	}
 	public TextureImage getDioTexture() { return dioTx; }
 	public Engine getEngine() {return engine;}
 	public void setIsConnected(boolean v) { isConnected = v; }

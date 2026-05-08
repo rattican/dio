@@ -46,6 +46,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();
                 message += "," + npc.getZ();
                 message += "," + npc.getYaw();
+                message += "," + (npc.isEnemy() ? "1" : "0");
                 sendPacketToAll(message);
             }
         } catch (IOException e) {
@@ -105,7 +106,7 @@ public class GameAIServerUDP extends GameServerUDP
     }
     public void sendNPCstart(UUID clientID) {
         try {
-            // Tell a newly connected client to spawn all 5 dolphins
+            // Tell a newly connected client to spawn all dolphins
             for (NPC npc : npcCtrl.getNPCList()) {
                 String message = new String("createNPC");
                 message += "," + npc.getId(); // Sends unique ID
@@ -113,6 +114,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();
                 message += "," + npc.getZ();
                 message += "," + npc.getYaw();
+                message += "," + (npc.isEnemy() ? "1" : "0"); // 1 for Enemy, 0 for Friend
                 sendPacket(message, clientID); 
             }
         } catch (IOException e) {
