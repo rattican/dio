@@ -29,6 +29,6 @@ public class KeyboardTurnRightAction extends AbstractInputAction {
      */
     @Override
     public void performAction(float time, Event e) {
-        game.rotateAvatarAndSendUpdate(0.20f);
+        game.rotateAvatarAndSendUpdate(0.1f);
     }
 }
