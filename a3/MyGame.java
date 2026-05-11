@@ -687,9 +687,32 @@ public class MyGame extends VariableFrameRateGame
 			// 1. If J was just pressed, start the animation and the timer
 			if (isHitting) {
 				as.playAnimation("HIT", 1.0f, EndType.STOP, 0);
+				
+				// --- NEW CLOBBER LOGIC ---
+				float hitRange = 4.0f; 
+				int hitID = -1;
+
+				// Get the list from your ProtocolClient
+				for (GhostNPC g : protClient.getNPCList()) {
+					float dist = getPlayerPosition().distance(g.getWorldLocation());
+					
+					// Check if the dolphin is close enough
+					// Note: You can check if it's friendly by looking at the texture if needed
+					if (dist < hitRange) {
+						hitID = g.getUniqueID();
+						break; 
+					}
+				}
+
+				// If we found a dolphin near our swing, tell the server to kill it
+				if (hitID != -1 && protClient != null) {
+					System.out.println("HIT CONNECTED! Removing Dolphin: " + hitID);
+					protClient.sendRemoveNPCMessage(hitID);
+				}
+				// -------------------------
+
 				isHitting = false;
-				hitTimer = 1.0f; // Lock the state for 1 second (approx length of hit_miku.rka)
-				System.out.println("ANIMATION TRIGGERED: HIT");
+				hitTimer = 1.0f; // Lock animation for 1 second
 			}
 
 			// 2. PRIORITY CHECK: If the timer is still running, let the HIT play
