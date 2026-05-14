@@ -129,6 +129,9 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isMoving;
 	private boolean isHitting;
 
+	//game logic: 
+	private int greendioRemaining = 5; //match the NPC controller
+
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
 		this.myType = role;
@@ -190,6 +193,14 @@ public class MyGame extends VariableFrameRateGame
 			this.running = false; // Stop the physics engine
 			this.paused = true;   // Pause movement
 			hudMsg = "GAME OVER! A predator dolphin caught you!";
+		}
+	}
+	//game logic: if the player hits all the green dio, win the game
+	public void decrementGreenDolphinCount() {
+		greendioRemaining--;
+		if (greendioRemaining <= 0) {
+			gameWon = true;
+			hudMsg = "ALL GREEN DIOS SAVED! YOU WIN!";
 		}
 	}
 	public TextureImage getDioTexture() { return dioTx; }
@@ -708,6 +719,12 @@ public class MyGame extends VariableFrameRateGame
 				if (hitID != -1 && protClient != null) {
 					System.out.println("HIT CONNECTED! Removing Dolphin: " + hitID);
 					protClient.sendRemoveNPCMessage(hitID);
+					greendioRemaining--; // Decrease local counter
+					//if no more green dio left, win the game
+					if (greendioRemaining <= 0) {
+						gameWon = true;
+						hudMsg = "ALL GREEN DIOS KILLED! YOU WIN!";
+					}
 				}
 				// -------------------------
 
@@ -735,10 +752,11 @@ public class MyGame extends VariableFrameRateGame
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
-		String scoreStr = Integer.toString(picturesTaken);
+		//String scoreStr = Integer.toString(picturesTaken);
+		String scoreStr = "Green Dios Left: " + greendioRemaining;
 
 		// strings
-		String dispStr1 = "Time = " + elapsTimeStr + " : Photos Taken = " + scoreStr;
+		String dispStr1 = "Time = " + elapsTimeStr + " ; " + scoreStr;
 		String dispStr2 = hudMsg;
 
 		// colors and positions

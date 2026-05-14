@@ -156,6 +156,9 @@ public class ProtocolClient extends GameConnectionClient
                     int idToRemove = Integer.parseInt(messageTokens[1]);
                     GhostNPC target = findGhostNPC(idToRemove);
                     if (target != null) {
+                        if (target.getTexture() == game.getNPCtexture()) {
+                            game.decrementGreenDolphinCount(); 
+                        }
                         game.getEngine().getSceneGraph().removeGameObject(target);
                         npcList.remove(target);
                         System.out.println("Confirmed: Dolphin " + idToRemove + " removed from world.");
