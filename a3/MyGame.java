@@ -197,7 +197,7 @@ public class MyGame extends VariableFrameRateGame
 	}
 	//game logic: if the player hits all the green dio, win the game
 	public void decrementGreenDolphinCount() {
-		greendioRemaining--;
+		this.greendioRemaining--;
 		if (greendioRemaining <= 0) {
 			gameWon = true;
 			hudMsg = "ALL GREEN DIOS SAVED! YOU WIN!";
@@ -719,7 +719,6 @@ public class MyGame extends VariableFrameRateGame
 				if (hitID != -1 && protClient != null) {
 					System.out.println("HIT CONNECTED! Removing Dolphin: " + hitID);
 					protClient.sendRemoveNPCMessage(hitID);
-					greendioRemaining--; // Decrease local counter
 					//if no more green dio left, win the game
 					if (greendioRemaining <= 0) {
 						gameWon = true;
