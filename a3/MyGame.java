@@ -1,6 +1,7 @@
 package a3;
 
 import tage.*;
+import tage.Light.LightType;
 import tage.shapes.*;
 
 import java.lang.Math;
@@ -32,19 +33,6 @@ import org.joml.Matrix4f;
 //import org.joml.Vector3f as JomlVector3f;
 
 import a3.MyGame;
-
-/*
-	Milestone 2: Physics, Sound, NPC/AI, and Animation (walk & attack)
-	
-	Haley's TO DO: Miku animation, NPC/AI, game logic
-	
-	Emily's TO DO: Physics, Sound, DIO animation, fixes from Milestone 1
-
-	Low-priority Task:
-	Modify second camera so skybox is not visible in overhead view
-	Add terrain features in distance
-	
-*/
 
 public class MyGame extends VariableFrameRateGame
 {
@@ -96,10 +84,11 @@ public class MyGame extends VariableFrameRateGame
 
 	// input manager and game object related stuff
 	private InputManager im;
-	private GameObject dio, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain;
-	private ObjShape dioS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS;
-	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx, npcTx, enemyTx;
-	private Light light1, light2, light3, light4;
+	private GameObject dio, pyr1, pyr2, pyr3, home, x, y, z, photo, ground, sky, logo, terrain, castle;
+	private ObjShape dioS, npcS, pyrS, homeS, xS, yS, zS, photoS, groundS, skyS, logoS, ghostS, terrainS, castleS;
+	private TextureImage dioTx, pyrTx1, pyrTx2, pyrTx3, brick, groundTx, skyTx, logoTx, ghostT, grassTx, hillsTx, npcTx, enemyTx, castleTx;
+	private Light light1, light2, light3, light4, dioLight;
+	private boolean lightOn = true;
 
 	// quaternion and matrix for physics
 	private boolean rotate = false, lerp = true;
@@ -118,7 +107,6 @@ public class MyGame extends VariableFrameRateGame
 	// camera orbit
 	private CameraOrbit3D orbit;
 	//dolphin NPC:
-	private ObjShape npcS;
 	private GhostNPC ghostNPS;
 
 	//for networking:
@@ -284,7 +272,6 @@ public class MyGame extends VariableFrameRateGame
 	public void loadShapes()
 	{	
 		dioS = new ImportedModel("dio.obj");
-		//load npcS
 		npcS = new ImportedModel("dio.obj");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
@@ -299,6 +286,7 @@ public class MyGame extends VariableFrameRateGame
 		((AnimatedShape)ghostS).loadAnimation("WALK", "walk_miku.rka");
 		((AnimatedShape)ghostS).loadAnimation("HIT", "hit_miku.rka");
 		terrainS = new TerrainPlane(128);
+		castleS = new ImportedModel("castle.obj");
 	}
 
 	@Override
@@ -340,6 +328,7 @@ public class MyGame extends VariableFrameRateGame
 		hillsTx = new TextureImage("hills.jpg");
 		npcTx = new TextureImage("dio_green.png");
 		enemyTx = new TextureImage("dio_red.png");
+		castleTx = new TextureImage("brick1.jpg");
 	}
 
 	@Override
@@ -357,14 +346,15 @@ public class MyGame extends VariableFrameRateGame
 
 		sky = new GameObject(GameObject.root(), skyS, skyTx);
 		sky.setLocalLocation(new Vector3f(0f,0f,0f));
-		sky.setLocalScale(new Matrix4f().scaling(-200f));	// flips inside out
+		sky.setLocalScale(new Matrix4f().scaling(200f));
 		sky.getRenderStates().hasLighting(false);
 
+		// world ground floor
 		ground = new GameObject(GameObject.root(), groundS, groundTx);
-		ground.setLocalScale(new Matrix4f().scaling(10f));
+		ground.setLocalScale(new Matrix4f().scaling(100f));
 		ground.setLocalLocation(new Vector3f(0f, 0f, 0f));
 		ground.getRenderStates().setTiling(1);
-		ground.getRenderStates().setTileFactor(4);
+		ground.getRenderStates().setTileFactor(8);
 		ground.getRenderStates().hasLighting(true);
 
 		// build local avatar in the center of the window
@@ -380,14 +370,22 @@ public class MyGame extends VariableFrameRateGame
 		dio.setLocalTranslation(initialTranslation);
 		dio.setLocalScale(initialScale);
 		dio.setLocalRotation(initialRotation);
+		dio.getRenderStates().hasLighting(true);
 
 		terrain = new GameObject(GameObject.root(), terrainS, grassTx);
-		terrain.setLocalLocation(new Vector3f(0f,0f,0f));
-		terrain.setLocalScale(new Matrix4f().scaling(20f,1f,20f));
+		terrain.setLocalLocation(new Vector3f(-82.5f,0f,82.5f));
+		terrain.setLocalScale(new Matrix4f().scaling(15f,1.2f,15f));
 		terrain.setHeightMap(hillsTx);
 		// set tiling for terrain textures
-		terrain.getRenderStates().setTiling(1);
+		terrain.getRenderStates().setTiling(2);
 		terrain.getRenderStates().setTileFactor(10);
+		terrain.getRenderStates().hasLighting(true);
+
+		castle = new GameObject(GameObject.root(), castleS, castleTx);
+		castle.setLocalLocation(new Vector3f(0f,0f,0f));
+		castle.setLocalScale(new Matrix4f().scaling(100f,30f,100f));
+		castle.getRenderStates().setTiling(1);
+		castle.getRenderStates().setTileFactor(10);
 
 		// build home floating above spawnpoint
 		home = new GameObject(GameObject.root(), homeS, brick);
@@ -402,6 +400,7 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(3.2f);
 		pyr1.setLocalTranslation(initialTranslation);
 		pyr1.setLocalScale(initialScale);
+		pyr1.getRenderStates().hasLighting(true);
 
 		// build pyramid at far left of the window
 		pyr2 = new GameObject(GameObject.root(), pyrS, pyrTx2);	// moon texture
@@ -409,6 +408,7 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(2f);
 		pyr2.setLocalTranslation(initialTranslation);
 		pyr2.setLocalScale(initialScale);
+		pyr2.getRenderStates().hasLighting(true);
 
 		// build pyramid at back of the window
 		pyr3 = new GameObject(GameObject.root(), pyrS, pyrTx3);	// rocky texture
@@ -416,6 +416,7 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(1.5f);
 		pyr3.setLocalTranslation(initialTranslation);
 		pyr3.setLocalScale(initialScale);
+		pyr3.getRenderStates().hasLighting(true);
 
 		// add rotation to pyramids
 		sc1 = new StretchController(engine, 2f);
@@ -452,7 +453,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeLights()
-	{	Light.setGlobalAmbient(0.5f, 0.5f, 0.5f);
+	{	Light.setGlobalAmbient(0.8f, 0.8f, 0.8f);
 		// pyramid 1 light
 		light1 = new Light();
 		light1.setLocation(new Vector3f(47,10,0));
@@ -473,6 +474,12 @@ public class MyGame extends VariableFrameRateGame
 		light4.setLocation(new Vector3f(-15,12,0));
 		light4.setDiffuse(1f, 0.5f, 1f);
 		(engine.getSceneGraph()).addLight(light4);
+		// light for dio
+		dioLight = new Light();
+		dioLight.setLocation(dio.getLocalLocation());
+		dioLight.setDiffuse(0.5f, 0.5f, 0.5f);
+		// dioLight.setType(Light);
+		(engine.getSceneGraph()).addLight(dioLight);
 	}
 
 	@Override
@@ -822,6 +829,23 @@ public class MyGame extends VariableFrameRateGame
 				interpolation = 0.0f;
 				rotate = true; lerp = false;
 				break;
+			case KeyEvent.VK_Q:
+				if (lightOn){
+					light1.disable();
+					light2.disable();
+					light3.disable();
+					light4.disable();
+					dioLight.enable();
+					lightOn = false;
+				} else {
+					light1.enable();
+					light2.enable();
+					light3.enable();
+					light4.enable();
+					dioLight.disable();
+					lightOn = true;
+				}
+				break;
 			case KeyEvent.VK_C: // toggle axes
 				axesVisible = !axesVisible;
 				if (axesVisible) {
@@ -911,5 +935,4 @@ public class MyGame extends VariableFrameRateGame
 		{	protClient.sendMoveMessage(dio.getWorldLocation());
 		}
 	}
-
 }
