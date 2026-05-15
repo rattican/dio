@@ -528,7 +528,7 @@ public class MyGame extends VariableFrameRateGame
 		// movement actions
 		FwdAction fwdAction = new FwdAction(this, protClient); // 		
 		BackAction backAction = new BackAction(this);
-		TurnAction turnAction = new TurnAction(this);
+		TurnAction turnAction = new TurnAction(this, protClient);
 		KeyboardTurnLeftAction kbLeft = new KeyboardTurnLeftAction(this);
 		KeyboardTurnRightAction kbRight = new KeyboardTurnRightAction(this);
 		HitAction hitAction = new HitAction(this);
@@ -686,7 +686,12 @@ public class MyGame extends VariableFrameRateGame
 				dio.setLocalRotation(matInterp);
 			}
 		}
-
+		//dynamic HUD layout:
+		RenderSystem rs = engine.getRenderSystem();
+		int currentWidth = (int)rs.getViewport("MAIN").getActualWidth();
+		int currentHeight = (int)rs.getViewport("MAIN").getActualHeight();
+		int centerNPCX = (currentWidth / 2) - 100; 
+		int topNPCY = currentHeight - 60; 
 		// updates elapsed time
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
@@ -766,9 +771,9 @@ public class MyGame extends VariableFrameRateGame
 		String dispStr2 = hudMsg;
 
 		// colors and positions
-		Vector3f hud1Color = new Vector3f(1,0,0);
+		Vector3f hud1Color = new Vector3f(1.0f, 0.85f, 0.0f);
 		Vector3f hud2Color = new Vector3f(0,1,0);
-		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color, 880, 1480);
+		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color,centerNPCX, topNPCY);
 		(engine.getHUDmanager()).setHUD2("Avatar: " + dio.getWorldLocation().toString(), hud2Color, 1350, 720);
 
 		// update skybox with camera

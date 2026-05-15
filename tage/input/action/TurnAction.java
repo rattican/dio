@@ -1,5 +1,7 @@
 package tage.input.action;
 
+import a3.ProtocolClient;
+
 import tage.*;
 import tage.input.action.AbstractInputAction;
 import a3.MyGame;
@@ -17,7 +19,12 @@ import net.java.games.input.Event;
 
 public class TurnAction extends AbstractInputAction
 {   private MyGame game;
-    public TurnAction(MyGame g) { game = g;}
+    private GameObject av;
+    private ProtocolClient protClient;
+    public TurnAction(MyGame g, ProtocolClient p) { 
+        game = g;
+        protClient = p;
+    }
 
     /**
      * Applies world-space yaw rotation to avatar based on input's axis value. Small values between -0.2 and 0.2  gets ignored to fix controller drift.
@@ -27,13 +34,17 @@ public class TurnAction extends AbstractInputAction
      */
     @Override 
     public void performAction(float time, Event e) {
-        float keyValue = e.getValue();
+        av = game.getAvatar();
+        if (av == null) return;
 
+        float keyValue = e.getValue();
         if (-0.2 < keyValue && keyValue < 0.2) return; // helped fix drifting
 
         float turnSpeed = 0.015f;
         // rotate globally and send update to server
         float yawDelta = -turnSpeed * keyValue * time;
         game.rotateAvatarAndSendUpdate(yawDelta);
+
+        game.setIsMoving(true);
     }
 }

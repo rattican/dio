@@ -84,7 +84,7 @@ public class GhostManager
         
         	// RKM: Rotation (Matrix from Yaw)
 			Matrix4f rot = new Matrix4f().rotationY((float)java.lang.Math.toRadians(yaw));
-        
+			ghost.setLocalRotation(rot);
         	// RKS: Scaling
         	ghost.setLocalScale(new Matrix4f().scaling(scale));
     	}
