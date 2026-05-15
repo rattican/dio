@@ -761,7 +761,7 @@ public class MyGame extends VariableFrameRateGame
 		// colors and positions
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		Vector3f hud2Color = new Vector3f(0,1,0);
-		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color, 15, 15);
+		(engine.getHUDmanager()).setHUD1(dispStr1 + " || " + dispStr2, hud1Color, 880, 1480);
 		(engine.getHUDmanager()).setHUD2("Avatar: " + dio.getWorldLocation().toString(), hud2Color, 1350, 720);
 
 		// update skybox with camera
