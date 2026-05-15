@@ -86,6 +86,19 @@ public class GameAIServerUDP extends GameServerUDP
                     e.printStackTrace();
                 }
             }
+            if (messageTokens[0].compareTo("removeNPC") == 0) {
+                int npcID = Integer.parseInt(messageTokens[1]);
+                
+                // 1. Remove from the Server's master list
+                npcCtrl.removeNPC(npcID); 
+
+                // 2. Broadcast to ALL clients to delete their local ghost
+                try {
+                    sendPacketToAll("rmvNPC," + npcID);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
     public void handleNearTiming(UUID clientID)
