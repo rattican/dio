@@ -49,7 +49,11 @@ public class NPC
     public boolean isPlayerNear() { return isPlayerNear; }
 
     public void updateLocation() {
-        this.isSpinning = this.isPlayerNear; 
+        if (this.isEnemy) {
+            this.isSpinning = false;
+        } else {
+            this.isSpinning = this.isPlayerNear; 
+        }
 
         if (isSpinning) {
             // If spinning, we stop X/Z movement and just rotate

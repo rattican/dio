@@ -58,20 +58,22 @@ public class NPCController
                 
                 // Process behavior logic and coordinate translation for EACH dolphin independently
                 for (NPC npc : npcList) {
-                    
                     // 1. Proximity Check: Is the player/Miku near THIS specific dolphin?
                     boolean playerIsNear = false;
-                    
                     // Look through active clients on the server to measure physical distance
                     if (server != null) {
                         playerIsNear = npc.isPlayerNear();
                     }
-
-                    
-                    // 3. Move the physical dolphin
-                    npc.updateLocation();
+                    if (npc.isEnemy()) {
+                        // RED DOLPHINS: Force them to keep updating/moving regardless of proximity
+                         npc.updateLocation(); 
+                    } else {
+                     // GREEN DOLPHINS: Only move if a player is NOT near them (they freeze when you approach)
+                        if (!playerIsNear) {
+                            npc.updateLocation();
+                        } 
+                    }
                 }
-                
                 // 4. Broadcast the synchronized coordinates of all 5 dolphins
                 if (server != null) {
                     server.sendNPCinfo();
