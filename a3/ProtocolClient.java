@@ -21,7 +21,9 @@ public class ProtocolClient extends GameConnectionClient
 	private GhostNPC ghostNPC;
 	//array list for all dolphins
 	private ArrayList<GhostNPC> npcList = new ArrayList<>();
-
+    public ArrayList<GhostNPC> getNPCList() {
+        return npcList;
+    }
 	public ProtocolClient(InetAddress remoteAddr, int remotePort, ProtocolType protocolType, MyGame game) throws IOException 
 	{	super(remoteAddr, remotePort, protocolType);
 		this.game = game;
@@ -149,7 +151,19 @@ public class ProtocolClient extends GameConnectionClient
                 UUID ghostID = UUID.fromString(messageTokens[1]);
                 ghostManager.removeGhostAvatar(ghostID);
             }
-            
+            //for remove certain NPC throught server 
+            if (messageTokens[0].compareTo("rmvNPC") == 0) {
+                    int idToRemove = Integer.parseInt(messageTokens[1]);
+                    GhostNPC target = findGhostNPC(idToRemove);
+                    if (target != null) {
+                        if (target.getTexture() == game.getNPCtexture()) {
+                            game.decrementGreenDolphinCount(); 
+                        }
+                        game.getEngine().getSceneGraph().removeGameObject(target);
+                        npcList.remove(target);
+                        System.out.println("Confirmed: Dolphin " + idToRemove + " removed from world.");
+                    }
+                }
             // 6. Handle CREATE or DETAILS_FOR messages
             if (messageTokens[0].compareTo("create") == 0 || messageTokens[0].compareTo("dsfr") == 0) {
                 UUID ghostID;
@@ -312,5 +326,14 @@ public class ProtocolClient extends GameConnectionClient
         } catch (IOException e) 
         {   e.printStackTrace();
         }   
+    }
+    public void sendRemoveNPCMessage(int npcID) 
+    {
+        try {
+            // Packet format: removeNPC, npcID
+            sendPacket("removeNPC," + npcID);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

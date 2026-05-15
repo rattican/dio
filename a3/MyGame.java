@@ -129,6 +129,9 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isMoving;
 	private boolean isHitting;
 
+	//game logic: 
+	private int greendioRemaining = 5; //match the NPC controller
+
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
 		this.myType = role;
@@ -190,6 +193,14 @@ public class MyGame extends VariableFrameRateGame
 			this.running = false; // Stop the physics engine
 			this.paused = true;   // Pause movement
 			hudMsg = "GAME OVER! A predator dolphin caught you!";
+		}
+	}
+	//game logic: if the player hits all the green dio, win the game
+	public void decrementGreenDolphinCount() {
+		this.greendioRemaining--;
+		if (greendioRemaining <= 0) {
+			gameWon = true;
+			hudMsg = "ALL GREEN DIOS SAVED! YOU WIN!";
 		}
 	}
 	public TextureImage getDioTexture() { return dioTx; }
@@ -687,9 +698,37 @@ public class MyGame extends VariableFrameRateGame
 			// 1. If J was just pressed, start the animation and the timer
 			if (isHitting) {
 				as.playAnimation("HIT", 1.0f, EndType.STOP, 0);
+				
+				// --- NEW CLOBBER LOGIC ---
+				float hitRange = 4.0f; 
+				int hitID = -1;
+
+				// Get the list from your ProtocolClient
+				for (GhostNPC g : protClient.getNPCList()) {
+					float dist = getPlayerPosition().distance(g.getWorldLocation());
+					
+					// Check if the dolphin is close enough
+					// Note: You can check if it's friendly by looking at the texture if needed
+					if (dist < hitRange) {
+						hitID = g.getUniqueID();
+						break; 
+					}
+				}
+
+				// If we found a dolphin near our swing, tell the server to kill it
+				if (hitID != -1 && protClient != null) {
+					System.out.println("HIT CONNECTED! Removing Dolphin: " + hitID);
+					protClient.sendRemoveNPCMessage(hitID);
+					//if no more green dio left, win the game
+					if (greendioRemaining <= 0) {
+						gameWon = true;
+						hudMsg = "ALL GREEN DIOS KILLED! YOU WIN!";
+					}
+				}
+				// -------------------------
+
 				isHitting = false;
-				hitTimer = 1.0f; // Lock the state for 1 second (approx length of hit_miku.rka)
-				System.out.println("ANIMATION TRIGGERED: HIT");
+				hitTimer = 1.0f; // Lock animation for 1 second
 			}
 
 			// 2. PRIORITY CHECK: If the timer is still running, let the HIT play
@@ -712,10 +751,11 @@ public class MyGame extends VariableFrameRateGame
 		// build and set HUD
 		int elapsTimeSec = Math.round((float)elapsTime);
 		String elapsTimeStr = Integer.toString(elapsTimeSec);
-		String scoreStr = Integer.toString(picturesTaken);
+		//String scoreStr = Integer.toString(picturesTaken);
+		String scoreStr = "Green Dios Left: " + greendioRemaining;
 
 		// strings
-		String dispStr1 = "Time = " + elapsTimeStr + " : Photos Taken = " + scoreStr;
+		String dispStr1 = "Time = " + elapsTimeStr + " ; " + scoreStr;
 		String dispStr2 = hudMsg;
 
 		// colors and positions

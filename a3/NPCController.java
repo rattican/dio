@@ -32,6 +32,15 @@ public class NPCController
         server = s;
         npcLoop();
     }
+    //the server will delete the NPC from array list
+    public void removeNPC(int id) {
+        for (int i = 0; i < npcList.size(); i++) {
+            if (npcList.get(i).getId() == id) {
+                npcList.remove(i);
+                break;
+            }
+        }
+    }
 
     public ArrayList<NPC> getNPCList() { return npcList; }
     public float getCriteria() { return criteria; }
