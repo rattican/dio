@@ -72,7 +72,7 @@ public class ProtocolClient extends GameConnectionClient
                 }
             }
 
-            // 2. Handle Movement Updates (mnpc)
+            // Handle Movement Updates (mnpc)
             // Packet Format: mnpc, npcID, x, y, z, yaw
             if (messageTokens[0].compareTo("mnpc") == 0) {
                 // Only try to access Index 6 if the packet actually has enough parts
@@ -100,7 +100,7 @@ public class ProtocolClient extends GameConnectionClient
                 }
             }
 
-            // 3. Handle Distance Checks (isnr)
+            // Handle Distance Checks (isnr)
             // Packet Format: isnr, npcID, x, y, z, criteria
             if (messageTokens[0].compareTo("isnr") == 0) {
                 int npcId = Integer.parseInt(messageTokens[1]); // ID is token 1
@@ -124,7 +124,7 @@ public class ProtocolClient extends GameConnectionClient
                 }
             }
 
-            // 4. Handle JOIN message
+            //  Handle JOIN message
             if(messageTokens[0].compareTo("join") == 0)
             {   
                 if(messageTokens[1].compareTo("success") == 0)
@@ -145,7 +145,7 @@ public class ProtocolClient extends GameConnectionClient
                 }   
             }
             
-            // 5. Handle BYE message
+            // Handle BYE message
             if(messageTokens[0].compareTo("bye") == 0)
             {   
                 UUID ghostID = UUID.fromString(messageTokens[1]);
@@ -164,7 +164,7 @@ public class ProtocolClient extends GameConnectionClient
                         System.out.println("Confirmed: Dolphin " + idToRemove + " removed from world.");
                     }
                 }
-            // 6. Handle CREATE or DETAILS_FOR messages
+            //Handle CREATE or DETAILS_FOR messages
             if (messageTokens[0].compareTo("create") == 0 || messageTokens[0].compareTo("dsfr") == 0) {
                 UUID ghostID;
                 Vector3f ghostPos;
@@ -206,14 +206,14 @@ public class ProtocolClient extends GameConnectionClient
                 }
             }
 
-            // 7. Handle WANTS_DETAILS message
+            // Handle WANTS_DETAILS message
             if (messageTokens[0].compareTo("wsds") == 0)
             {
                 UUID ghostID = UUID.fromString(messageTokens[1]);
                 sendDetailsForMessage(ghostID, game.getPlayerPosition());
             }
             
-            // 8. Handle MOVE message
+            //Handle MOVE message
             if (messageTokens[0].compareTo("move") == 0)
             {
                 UUID ghostID = UUID.fromString(messageTokens[1]);
@@ -239,7 +239,7 @@ public class ProtocolClient extends GameConnectionClient
     private void createGhostNPC(int id, Vector3f position, boolean isEnemy) throws IOException {
         if (findGhostNPC(id) == null) {
             // Pick the texture based on the isEnemy flag
-            // dio_red for enemies, dio_green for friends
+            // dio_red for untouchable , dio_green for regular dio to kill 
             TextureImage tex = isEnemy ? game.getENEMYtexture() : game.getNPCtexture();
 
             if (game.getNPCshape() == null || tex == null) {

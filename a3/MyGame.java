@@ -737,18 +737,15 @@ public class MyGame extends VariableFrameRateGame
 						hudMsg = "ALL GREEN DIOS KILLED! YOU WIN!";
 					}
 				}
-				// -------------------------
-
 				isHitting = false;
 				hitTimer = 1.0f; // Lock animation for 1 second
 			}
-
-			// 2. PRIORITY CHECK: If the timer is still running, let the HIT play
+			// If the timer is still running, let the HIT play
 			if (hitTimer > 0) {
 				hitTimer -= frame; // Countdown
 				// Do NOT play any other animations here
 			} 
-			// 3. SECONDARY: If we aren't hitting, then we can walk
+			//  If we aren't hitting, then we can walk
 			else if (isMoving) {
 				as.playAnimation("WALK", 0.5f, EndType.LOOP, 0);
 			} 

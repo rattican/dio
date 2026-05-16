@@ -128,7 +128,7 @@ public class GameAIServerUDP extends GameServerUDP
                 message += "," + npc.getY();
                 message += "," + npc.getZ();
                 message += "," + npc.getYaw();
-                message += "," + (npc.isEnemy() ? "1" : "0"); // 1 for Enemy, 0 for Friend
+                message += "," + (npc.isEnemy() ? "1" : "0"); // 1 for untouchable, 0 for greendio that can kill
                 sendPacket(message, clientID); 
             }
         } catch (IOException e) {
