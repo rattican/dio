@@ -285,7 +285,7 @@ public class MyGame extends VariableFrameRateGame
 		dioS = new AnimatedShape("dioMesh.rkm", "dioSkeleton.rks");
 		((AnimatedShape)dioS).loadAnimation("WALK", "dioWalk.rka");
 		((AnimatedShape)dioS).loadAnimation("HIT", "dioHit.rka");
-		npcS = new ImportedModel("dioMesh.rkm", "dioSkeleton.rks");
+		npcS = new AnimatedShape("dioMesh.rkm", "dioSkeleton.rks");
 		((AnimatedShape)npcS).loadAnimation("WALK", "dioWalk.rka");
 		((AnimatedShape)npcS).loadAnimation("HIT", "dioHit.rka");
 		pyrS = new Pyramid();
