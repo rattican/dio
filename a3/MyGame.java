@@ -106,7 +106,7 @@ public class MyGame extends VariableFrameRateGame
 
 	// camera orbit
 	private CameraOrbit3D orbit;
-	//dolphin NPC:
+	// other NPC:
 	private GhostNPC ghostNPS;
 
 	//for networking:
@@ -282,7 +282,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	
-		dioS = new ImportedModel("dio.obj");
+		dioS = new AnimatedShape("dioMesh.rkm", "dioSkeleton.rks");
+		((AnimatedShape)dioS).loadAnimation("WALK", "dioWalk.rka");
+		((AnimatedShape)dioS).loadAnimation("HIT", "dioHit.rka");
 		npcS = new ImportedModel("dio.obj");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
@@ -663,6 +665,7 @@ public class MyGame extends VariableFrameRateGame
     	if (protClient != null)
         	protClient.processPackets();
 		}
+		
 	//for miku animation
 	public void setIsMoving(boolean m) { isMoving = m; }
 	public void setIsHitting(boolean h) { isHitting = h; }
