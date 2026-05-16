@@ -285,7 +285,9 @@ public class MyGame extends VariableFrameRateGame
 		dioS = new AnimatedShape("dioMesh.rkm", "dioSkeleton.rks");
 		((AnimatedShape)dioS).loadAnimation("WALK", "dioWalk.rka");
 		((AnimatedShape)dioS).loadAnimation("HIT", "dioHit.rka");
-		npcS = new ImportedModel("dio.obj");
+		npcS = new ImportedModel("dioMesh.rkm", "dioSkeleton.rks");
+		((AnimatedShape)npcS).loadAnimation("WALK", "dioWalk.rka");
+		((AnimatedShape)npcS).loadAnimation("HIT", "dioHit.rka");
 		pyrS = new Pyramid();
 		homeS = new DioHouse();
 		xS = new Line(new Vector3f(0f,0f,0f), new Vector3f(3f,0f,0f));
@@ -665,7 +667,7 @@ public class MyGame extends VariableFrameRateGame
     	if (protClient != null)
         	protClient.processPackets();
 		}
-		
+
 	//for miku animation
 	public void setIsMoving(boolean m) { isMoving = m; }
 	public void setIsHitting(boolean h) { isHitting = h; }
