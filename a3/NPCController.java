@@ -14,17 +14,24 @@ public class NPCController
 
     public NPCController() 
     {
-        for (int i = 0; i < 5; i++) {
-        NPC npc = new NPC(i, false);
-        npc.randomizeLocation(rand.nextInt(40)-20, rand.nextInt(20)-10);
-        npcList.add(npc);
-        }
-    // Spawn 2 enemy dolphins (IDs 5 and 6)
-        for (int i = 5; i < 7; i++) {
-            NPC npc = new NPC(i, true);
-            npc.randomizeLocation(rand.nextInt(40)-20, rand.nextInt(20)-10);
-            npc.setSpeed(0.15); // Make them slightly faster!
+        int nextID = 0;
+
+         //1. Spawn 10 Green Dolphins (Friendly)
+        for (int i = 0; i < 10; i++) {
+            NPC npc = new NPC(nextID, false);
+            // Dynamic random distribution across your boundary space
+            npc.randomizeLocation(rand.nextInt(40) - 20, rand.nextInt(20) - 10);
             npcList.add(npc);
+            nextID++; 
+        }
+
+        // 2. Spawn 5 Red Dolphins (Enemy Predators)
+        for (int i = 0; i < 5; i++) {
+            NPC npc = new NPC(nextID, true);
+            npc.randomizeLocation(rand.nextInt(40) - 20, rand.nextInt(20) - 10);
+            npc.setSpeed(0.15); // Keeps them slightly faster!
+            npcList.add(npc);
+            nextID++;
         }
     }
 

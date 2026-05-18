@@ -27,7 +27,7 @@ public class GhostNPC extends GameObject
     //helper for game logic:
     public TextureImage getTexture() { return myTexture; }
     // Handled on client if the server still sends sizing packets, 
-    // but since we aren't changing size, we can leave this as a basic scale setup
+    // but since we aren't changing size, we can leave basic scale setup
     public void setSize(boolean big) {
         if (!big) {
             this.setLocalScale((new Matrix4f()).scaling(1.0f)); // default scale

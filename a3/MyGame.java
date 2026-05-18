@@ -118,7 +118,7 @@ public class MyGame extends VariableFrameRateGame
 	private boolean isHitting;
 
 	//game logic: 
-	private int greendioRemaining = 5; //match the NPC controller
+	private int greendioRemaining = 10; //match the NPC controller
 
 	public MyGame(String serverAddress, int serverPort, String protocol, String role) { 
 		super(); 
